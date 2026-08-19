@@ -4,18 +4,22 @@ import type { RoeQuery, RoeResult } from './types';
 
 // 淨利/權益欄位選擇邏輯：優先採用「歸屬於母公司」口徑（分子分母範圍一致），
 // 缺漏時（例如部分產業因科目歧義而解析不到細項）退回用整體數字。
-const pickNetIncome = (record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null) => {
-  if (!record) return { field: null as const, value: null as bigint | null };
-  if (record.netIncomeAttributableToParent !== null) return { field: 'netIncomeAttributableToParent' as const, value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { field: 'netIncome' as const, value: record.netIncome };
-  return { field: null as const, value: null };
+const pickNetIncome = (
+  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
+): { field: 'netIncomeAttributableToParent' | 'netIncome' | null; value: bigint | null } => {
+  if (!record) return { field: null, value: null };
+  if (record.netIncomeAttributableToParent !== null) return { field: 'netIncomeAttributableToParent', value: record.netIncomeAttributableToParent };
+  if (record.netIncome !== null) return { field: 'netIncome', value: record.netIncome };
+  return { field: null, value: null };
 };
 
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null) => {
-  if (!record) return { field: null as const, value: null as bigint | null };
-  if (record.equityAttributableToParent !== null) return { field: 'equityAttributableToParent' as const, value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { field: 'totalEquity' as const, value: record.totalEquity };
-  return { field: null as const, value: null };
+const pickEquity = (
+  record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null
+): { field: 'equityAttributableToParent' | 'totalEquity' | null; value: bigint | null } => {
+  if (!record) return { field: null, value: null };
+  if (record.equityAttributableToParent !== null) return { field: 'equityAttributableToParent', value: record.equityAttributableToParent };
+  if (record.totalEquity !== null) return { field: 'totalEquity', value: record.totalEquity };
+  return { field: null, value: null };
 };
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
