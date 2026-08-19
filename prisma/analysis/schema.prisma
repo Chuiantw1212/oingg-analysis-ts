@@ -1,0 +1,34 @@
+// 本 schema 定義的表由 oingg-ratios-ts 自己擁有 schema/migration，連到獨立的 oingg-analysis
+// Neon 專案（見專案根目錄 .env 的 ANALYSIS_DATABASE_URL / ANALYSIS_DIRECT_URL）。
+// 跟 ../schema.prisma（唯讀鏡像 oingg-mops-ts 的季度財報表）是完全不同的資料庫，不要混用連線。
+//
+// 異動這裡的 model 後，用 `pnpm prisma:analysis:migrate` 產生/套用 migration（不要對
+// ../schema.prisma 那份跑 migrate，那份永遠只用 db pull 內省）。
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/analysis-client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("ANALYSIS_DATABASE_URL")
+  directUrl = env("ANALYSIS_DIRECT_URL")
+}
+
+// 普通股面額例外表——EPS/每股淨值等計算預設用面額 10 元反推流通股數（capitalStock / 10n）。
+// 只有面額不是 10 元的公司才需要出現在這張表，用來覆蓋預設值；查不到就照預設算。
+// 面額幾乎不會變動，這是靜態參考資料，不是每季 ingest 的財報資料。
+model CommonStockParValueException {
+  symbol        String   @id @map("symbol") // 公司代號
+  companyName   String   @map("company_name") // 公司簡稱
+  parValue      Decimal  @map("par_value") @db.Decimal(10, 2) // 普通股面額（≠ 10 才會出現在這張表）
+  commonShares  BigInt   @map("common_shares") // 普通股股數（資料來源快照當下的值）
+  paidInCapital BigInt   @map("paid_in_capital") // 實收資本額，交叉驗證用：約等於 commonShares * parValue
+  asOfDate      DateTime @map("as_of_date") @db.Date // 這筆快照的基準日
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("common_stock_par_value_exception")
+}

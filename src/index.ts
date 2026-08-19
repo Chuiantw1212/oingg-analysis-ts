@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import { connectDb } from './adapters/prisma/index';
+import { connectAnalysisDb } from './adapters/prisma/analysisClient';
 import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
@@ -40,6 +41,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await connectDb();
+    await connectAnalysisDb();
     const host = config.isProduction ? '0.0.0.0' : 'localhost';
     const port = Number(config.port);
     app.listen(port, host, () => {

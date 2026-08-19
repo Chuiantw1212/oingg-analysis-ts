@@ -33,6 +33,19 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 
 `pnpm-workspace.yaml`（`blockExoticSubdeps: false` + `allowBuilds`）是從 oingg-mops-ts 複製過來的——`ultimate-express` 依賴 `uWebSockets.js`（git 來源的 exotic subdependency），沒有這個設定 `pnpm install` 會失敗，且這個設定**不能**用簡單的 `.npmrc` 達成。
 
+## `prisma/analysis/schema.prisma` 是本服務自己擁有的第二個資料庫
+
+跟上面「唯讀鏡像」的 `prisma/schema.prisma` 不同，`prisma/analysis/schema.prisma` 連到獨立的 Neon 專案 **oingg-analysis**（`.env` 的 `ANALYSIS_DATABASE_URL` / `ANALYSIS_DIRECT_URL`），本服務自己擁有這裡的 schema/migration。目前只有一張表：
+
+- **`CommonStockParValueException`**：普通股面額例外表。EPS/每股淨值等需要「流通股數」的比率，預設用面額 10 元反推（`capitalStock / 10n`）；只有面額不是 10 元的公司才需要出現在這張表，用來覆蓋預設值。欄位對應公司基本資料裡的「公司代號／公司簡稱／普通股面額／普通股股數／實收資本額」。目前**表是空的**，還沒有自動化的資料來源（例如接 TWSE 開放資料 API）去灌資料，也還沒有讀取這張表的計算邏輯——這兩塊都還沒做。
+
+這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
+
+```bash
+pnpm prisma:analysis:migrate   # 產生並套用 migration（不要對 prisma/schema.prisma 那份跑這個）
+pnpm prisma:analysis:studio    # Prisma Studio 開這個 DB
+```
+
 ## API 一覽
 
 | Method + Path | 說明 |

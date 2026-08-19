@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma",
+    "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
+    "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma"
   },
   "keywords": [],
   "author": "",

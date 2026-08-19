@@ -6,3 +6,6 @@ node_modules
 
 # Ignore build output
 dist
+
+# Generated Prisma client for the oingg-analysis DB (regenerated via postinstall)
+generated
