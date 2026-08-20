@@ -54,7 +54,9 @@ URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 
 - **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/cash-flow/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/cashFlow/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
 - **`RoaResult`**（`roa_result`）：`GET /api/profitability/roa` 的持久化結果，欄位對應 `src/domains/profitability/roa/types.ts` 的 `RoaResult`。跟 `RoeResult` 同一種單季/年化/TTM 三欄位結構，分母換成總資產。
 - **`DebtRatioResult`**（`debt_ratio_result`）：`GET /api/solvency/debt-ratio` 的持久化結果，欄位對應 `src/domains/solvency/debtRatio/types.ts` 的 `DebtRatioResult`。純資產負債表時點快照，只有一個 `debtRatioPct` 欄位，沒有單季/年化/TTM 的區別。
-- **`LiquidityRatioResult`**（`liquidity_ratio_result`）：`GET /api/solvency/liquidity-ratio` 的持久化結果，欄位對應 `src/domains/solvency/liquidityRatio/types.ts` 的 `LiquidityRatioResult`。流動比率跟速動比率共用同一張表，一樣是純時點快照。
+- **`LiquidityRatioResult`**（`liquidity_ratio_result`）：`GET /api/solvency/liquidity-ratio` 的持久化結果，欄位對應 `src/domains/solvency/liquidityRatio/types.ts` 的 `LiquidityRatioResult`。流動比率、速動比率、現金比率共用同一張表，一樣是純時點快照。
+- **`DeRatioResult`**（`de_ratio_result`）：`GET /api/solvency/de-ratio` 的持久化結果，欄位對應 `src/domains/solvency/deRatio/types.ts` 的 `DeRatioResult`。純時點快照，只有一個 `deRatioPct` 欄位。
+- **`InterestCoverageResult`**（`interest_coverage_result`）：`GET /api/solvency/interest-coverage` 的持久化結果，欄位對應 `src/domains/solvency/interestCoverage/types.ts` 的 `InterestCoverageResult`。跟 `MarginsResult` 同一種「流量/流量」結構，只有單季/TTM 兩欄位，沒有年化。
 - **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/turnover/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產三個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
@@ -78,7 +80,9 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/api/<分類
 | `GET /api/profitability/margins` | 計算單一公司單一季度的毛利率、營業利益率、稅後淨利率（單季、TTM 兩種數值） |
 | `GET /api/cash-flow/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
 | `GET /api/solvency/debt-ratio` | 計算單一公司單一季度的負債比率 |
-| `GET /api/solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率與速動比率 |
+| `GET /api/solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率、速動比率與現金比率 |
+| `GET /api/solvency/de-ratio` | 計算單一公司單一季度的負債權益比 |
+| `GET /api/solvency/interest-coverage` | 計算單一公司單一季度的利息保障倍數（單季、TTM 兩種數值） |
 | `GET /api/turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產周轉率（單季、單季年化、TTM 三種數值） |
 
 Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。

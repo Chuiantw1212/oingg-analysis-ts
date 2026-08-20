@@ -9,11 +9,11 @@
 |---|---|---|---|---|
 | `Current_Ratio` | 流動比率 | `Current Assets / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /api/solvency/liquidity-ratio` |
 | `Quick_Ratio` | 速動比率 | `(Cash + Marketable Securities + Receivables) / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /api/solvency/liquidity-ratio`。公式略有差異，見下方說明 |
-| `Cash_Ratio` | 現金比率 | `(Cash + Cash Equivalents) / Current Liabilities` | MRQ, FY | ⬜ 未實作 |
-| `DE_Ratio` | 負債權益比 | `Total Debt / Shareholders' Equity` | MRQ, FY | ⬜ 未實作 |
+| `Cash_Ratio` | 現金比率 | `(Cash + Cash Equivalents) / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /api/solvency/liquidity-ratio` |
+| `DE_Ratio` | 負債權益比 | `Total Debt / Shareholders' Equity` | MRQ, FY | ✅ 已實作 — [`deRatio/`](deRatio/)，`GET /api/solvency/de-ratio`。`Total Debt` 用的是有息負債（短期借款+應付公司債+長期借款），不是總負債 |
 | `Debt_to_Assets` | 資產負債率 | `Total Liabilities / Total Assets` | MRQ, FY | ✅ 已實作 — [`debtRatio/`](debtRatio/)，`GET /api/solvency/debt-ratio` |
-| `Net_Debt_to_EBITDA` | 淨負債對 EBITDA 比 | `(Total Debt - Cash) / EBITDA` | TTM, FY | ⬜ 未實作 |
-| `Interest_Coverage` | 利息保障倍數 | `EBIT / Interest Expense` | TTM, FY | ⬜ 未實作 |
+| `Net_Debt_to_EBITDA` | 淨負債對 EBITDA 比 | `(Total Debt - Cash) / EBITDA` | TTM, FY | ⬜ 未實作，依賴 `DE_Ratio` 的有息負債欄位跟 EBITDA（`Interest_Coverage` 已有 EBIT，加回折舊攤銷即 EBITDA） |
+| `Interest_Coverage` | 利息保障倍數 | `EBIT / Interest Expense` | TTM, FY | ✅ 已實作 — [`interestCoverage/`](interestCoverage/)，`GET /api/solvency/interest-coverage`（單季/TTM，見下方說明） |
 | `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ⬜ 未實作，多變量模型，依賴前面幾個比率先做完 |
 
 ## 已實作但跟 taxonomy 公式略有差異的地方
@@ -22,5 +22,8 @@
 
 ## 實作慣例
 
-- `Current_Ratio`/`Quick_Ratio` 共用同一支 API/同一張表——速動比率一定要先有流動資產/流動負債，拆開只會重複查詢。
-- 這一類的指標多數是**純資產負債表時點快照**（`Debt_to_Assets`、`Current_Ratio`、`Quick_Ratio`、`Cash_Ratio`、`DE_Ratio`），不像 ROE/ROA 有單季/年化/TTM 的區別——資產負債表本身就是某一天的餘額，annualize 對這種比率沒有意義。只有 `Interest_Coverage`、`Net_Debt_to_EBITDA` 這種牽涉損益表流量（EBIT）的才會有 TTM 版本。
+- `Current_Ratio`/`Quick_Ratio`/`Cash_Ratio` 共用同一支 API/同一張表（[`liquidityRatio/`](liquidityRatio/)）——三個分母都是流動負債，一定要先有流動資產/流動負債，拆開只會重複查詢。
+- 這一類的指標多數是**純資產負債表時點快照**（`Debt_to_Assets`、`Current_Ratio`、`Quick_Ratio`、`Cash_Ratio`、`DE_Ratio`），不像 ROE/ROA 有單季/年化/TTM 的區別——資產負債表本身就是某一天的餘額，annualize 對這種比率沒有意義，只有單一數值。
+- `Interest_Coverage` 是「流量/流量」比率（EBIT / 利息費用，兩者都是損益表當季數字），結構跟 [`../profitability/margins/`](../profitability/margins/) 一樣：只有單季跟 TTM 兩種口徑，沒有年化。`Net_Debt_to_EBITDA` 之後做的話也會是同一種結構。
+- `DE_Ratio` 的分子刻意只算**有息負債**（`shortTermBorrowings` + `bondsPayable` + `longTermBorrowings`），不是 `Debt_to_Assets` 用的總負債——兩個指標分子不一樣，即使都叫「負債」；三個欄位任一為 `null` 視為 0（沒有借那種負債），不是資料缺漏，只有整張資產負債表查無資料才算缺漏。
+- `Interest_Coverage` 的 EBIT 用「稅前淨利 + 利息費用」反推，不是直接抓某個 EBIT 欄位（財報沒有現成的 EBIT 欄位）。

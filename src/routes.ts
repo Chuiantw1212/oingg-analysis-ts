@@ -9,6 +9,8 @@ import marginsRouter from './domains/profitability/margins/route';
 import cashFlowPerShareRouter from './domains/cashFlow/cashFlowPerShare/route';
 import debtRatioRouter from './domains/solvency/debtRatio/route';
 import liquidityRatioRouter from './domains/solvency/liquidityRatio/route';
+import deRatioRouter from './domains/solvency/deRatio/route';
+import interestCoverageRouter from './domains/solvency/interestCoverage/route';
 import turnoverRatioRouter from './domains/turnover/turnoverRatio/route';
 
 const router = Router();
@@ -21,7 +23,7 @@ router.use(rootRouter);
 const apiRouter = Router();
 apiRouter.use('/profitability', roeRouter, roaRouter, bvpsRouter, epsRouter, revenuePerShareRouter, marginsRouter);
 apiRouter.use('/cash-flow', cashFlowPerShareRouter);
-apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter);
+apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter);
 apiRouter.use('/turnover', turnoverRatioRouter);
 
 router.use('/api', apiRouter);

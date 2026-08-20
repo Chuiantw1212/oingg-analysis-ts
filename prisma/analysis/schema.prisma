@@ -350,3 +350,59 @@ model MarginsResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("margins_result")
 }
+
+// 負債權益比計算結果——純資產負債表時點快照，沒有單季/年化/TTM 的區別（跟 DebtRatioResult 同一種結構）。
+// 欄位對應 src/domains/solvency/deRatio/types.ts 的 DeRatioResult。
+model DeRatioResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  deRatioPct Decimal? @map("de_ratio_pct") @db.Decimal(10, 2)
+
+  // 有息負債（短期借款 + 應付公司債 + 長期借款），不是總負債。
+  totalDebtValue  BigInt? @map("total_debt_value")
+  equityFieldUsed String? @map("equity_field_used")
+  equityValue     BigInt? @map("equity_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("de_ratio_result")
+}
+
+// 利息保障倍數計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
+// 欄位對應 src/domains/solvency/interestCoverage/types.ts 的 InterestCoverageResult。
+model InterestCoverageResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  interestCoverageQuarterly Decimal? @map("interest_coverage_quarterly") @db.Decimal(14, 4)
+  interestCoverageTtm       Decimal? @map("interest_coverage_ttm") @db.Decimal(14, 4)
+
+  // EBIT = 稅前淨利 + 利息費用。
+  ebitValue               BigInt? @map("ebit_value")
+  ebitTtmValue            BigInt? @map("ebit_ttm_value") // 近四季加總；資料不齊則為 null
+  interestExpenseValue    BigInt? @map("interest_expense_value")
+  interestExpenseTtmValue BigInt? @map("interest_expense_ttm_value") // 近四季加總；資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("interest_coverage_result")
+}
