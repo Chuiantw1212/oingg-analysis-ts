@@ -291,14 +291,19 @@ model TurnoverRatioResult {
   assetTurnoverQuarterlyAnnualized Decimal? @map("asset_turnover_quarterly_annualized") @db.Decimal(14, 4)
   assetTurnoverTtm                 Decimal? @map("asset_turnover_ttm") @db.Decimal(14, 4)
 
+  fixedAssetTurnoverQuarterly           Decimal? @map("fixed_asset_turnover_quarterly") @db.Decimal(14, 4)
+  fixedAssetTurnoverQuarterlyAnnualized Decimal? @map("fixed_asset_turnover_quarterly_annualized") @db.Decimal(14, 4)
+  fixedAssetTurnoverTtm                 Decimal? @map("fixed_asset_turnover_ttm") @db.Decimal(14, 4)
+
   operatingCostValue       BigInt? @map("operating_cost_value") // 本季營業成本
   operatingCostTtmValue    BigInt? @map("operating_cost_ttm_value") // 近四季加總；資料不齊則為 null
   operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收
   operatingRevenueTtmValue BigInt? @map("operating_revenue_ttm_value") // 近四季加總；資料不齊則為 null
 
-  inventoryValue          BigInt? @map("inventory_value") // 本季期末存貨
-  accountsReceivableValue BigInt? @map("accounts_receivable_value") // 本季期末應收帳款
-  totalAssetsValue        BigInt? @map("total_assets_value") // 本季期末總資產
+  inventoryValue               BigInt? @map("inventory_value") // 本季期末存貨
+  accountsReceivableValue      BigInt? @map("accounts_receivable_value") // 本季期末應收帳款
+  totalAssetsValue              BigInt? @map("total_assets_value") // 本季期末總資產
+  propertyPlantEquipmentValue   BigInt? @map("property_plant_equipment_value") // 本季期末不動產、廠房及設備
 
   warnings String[]
 

@@ -32,6 +32,11 @@ export interface TurnoverRatioResult {
   assetTurnoverQuarterlyAnnualized: number | null;
   assetTurnoverTtm: number | null;
 
+  // 固定資產周轉率（次）= 本季營收 / 本季期末不動產、廠房及設備（propertyPlantEquipment）
+  fixedAssetTurnoverQuarterly: number | null;
+  fixedAssetTurnoverQuarterlyAnnualized: number | null;
+  fixedAssetTurnoverTtm: number | null;
+
   operatingCost: {
     value: string | null; // BigInt as string；本季營業成本
   };
@@ -53,6 +58,9 @@ export interface TurnoverRatioResult {
   };
   totalAssets: {
     value: string | null; // BigInt as string；本季期末總資產
+  };
+  propertyPlantEquipment: {
+    value: string | null; // BigInt as string；本季期末不動產、廠房及設備
   };
 
   ttm: {

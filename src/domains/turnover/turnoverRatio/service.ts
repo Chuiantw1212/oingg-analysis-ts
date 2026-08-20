@@ -30,6 +30,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
   const inventory = balanceSheet?.inventory ?? null;
   const accountsReceivable = balanceSheet?.accountsReceivable ?? null;
   const totalAssets = balanceSheet?.totalAssets ?? null;
+  const propertyPlantEquipment = balanceSheet?.propertyPlantEquipment ?? null;
   const operatingCost = currentIncomeStatement?.operatingCost ?? null;
   const operatingRevenue = currentIncomeStatement?.operatingRevenue ?? null;
 
@@ -77,6 +78,8 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
   let receivablesTurnoverQuarterlyAnnualized: number | null = null;
   let assetTurnoverQuarterly: number | null = null;
   let assetTurnoverQuarterlyAnnualized: number | null = null;
+  let fixedAssetTurnoverQuarterly: number | null = null;
+  let fixedAssetTurnoverQuarterlyAnnualized: number | null = null;
 
   if (operatingCost !== null && inventory !== null) {
     inventoryTurnoverQuarterly = toTurnover(operatingCost, inventory);
@@ -93,6 +96,11 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     if (assetTurnoverQuarterly !== null) assetTurnoverQuarterlyAnnualized = Math.round(assetTurnoverQuarterly * 4 * 100) / 100;
     if (totalAssets <= 0n) warnings.push('本季期末總資產為零或負數，總資產周轉率數值意義有限，請自行判斷是否採用。');
   }
+  if (operatingRevenue !== null && propertyPlantEquipment !== null) {
+    fixedAssetTurnoverQuarterly = toTurnover(operatingRevenue, propertyPlantEquipment);
+    if (fixedAssetTurnoverQuarterly !== null) fixedAssetTurnoverQuarterlyAnnualized = Math.round(fixedAssetTurnoverQuarterly * 4 * 100) / 100;
+    if (propertyPlantEquipment <= 0n) warnings.push('本季期末不動產、廠房及設備為零或負數，固定資產周轉率數值意義有限，請自行判斷是否採用。');
+  }
 
   const operatingCostTtmValue = ttmComplete ? costTtmSum : null;
   const operatingRevenueTtmValue = ttmComplete ? revenueTtmSum : null;
@@ -101,6 +109,8 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
   const receivablesTurnoverTtm =
     operatingRevenueTtmValue !== null && accountsReceivable !== null ? toTurnover(operatingRevenueTtmValue, accountsReceivable) : null;
   const assetTurnoverTtm = operatingRevenueTtmValue !== null && totalAssets !== null ? toTurnover(operatingRevenueTtmValue, totalAssets) : null;
+  const fixedAssetTurnoverTtm =
+    operatingRevenueTtmValue !== null && propertyPlantEquipment !== null ? toTurnover(operatingRevenueTtmValue, propertyPlantEquipment) : null;
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? null;
 
@@ -126,6 +136,9 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         assetTurnoverQuarterly,
         assetTurnoverQuarterlyAnnualized,
         assetTurnoverTtm,
+        fixedAssetTurnoverQuarterly,
+        fixedAssetTurnoverQuarterlyAnnualized,
+        fixedAssetTurnoverTtm,
         operatingCostValue: operatingCost,
         operatingCostTtmValue,
         operatingRevenueValue: operatingRevenue,
@@ -133,6 +146,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         inventoryValue: inventory,
         accountsReceivableValue: accountsReceivable,
         totalAssetsValue: totalAssets,
+        propertyPlantEquipmentValue: propertyPlantEquipment,
         warnings,
       },
       update: {
@@ -146,6 +160,9 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         assetTurnoverQuarterly,
         assetTurnoverQuarterlyAnnualized,
         assetTurnoverTtm,
+        fixedAssetTurnoverQuarterly,
+        fixedAssetTurnoverQuarterlyAnnualized,
+        fixedAssetTurnoverTtm,
         operatingCostValue: operatingCost,
         operatingCostTtmValue,
         operatingRevenueValue: operatingRevenue,
@@ -153,6 +170,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         inventoryValue: inventory,
         accountsReceivableValue: accountsReceivable,
         totalAssetsValue: totalAssets,
+        propertyPlantEquipmentValue: propertyPlantEquipment,
         warnings,
       },
     });
@@ -176,6 +194,9 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     assetTurnoverQuarterly,
     assetTurnoverQuarterlyAnnualized,
     assetTurnoverTtm,
+    fixedAssetTurnoverQuarterly,
+    fixedAssetTurnoverQuarterlyAnnualized,
+    fixedAssetTurnoverTtm,
     operatingCost: { value: operatingCost?.toString() ?? null },
     operatingCostTtm: { value: operatingCostTtmValue?.toString() ?? null },
     operatingRevenue: { value: operatingRevenue?.toString() ?? null },
@@ -183,6 +204,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     inventory: { value: inventory?.toString() ?? null },
     accountsReceivable: { value: accountsReceivable?.toString() ?? null },
     totalAssets: { value: totalAssets?.toString() ?? null },
+    propertyPlantEquipment: { value: propertyPlantEquipment?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };
