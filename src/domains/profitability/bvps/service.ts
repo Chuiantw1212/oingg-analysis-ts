@@ -64,7 +64,7 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
     if (paidInShares <= 0n) warnings.push('流通股數為零或負數，BVPS 數值意義有限，請自行判斷是否採用。');
   }
 
-  // 存進 oingg-analysis DB 的 bvps_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 profitability_bvps，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.bvpsResult.upsert({
       where: {
@@ -97,7 +97,7 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
       },
     });
   } catch (error) {
-    console.error('[bvps]: 寫入 bvps_result 失敗，不影響本次回傳結果。', error);
+    console.error('[bvps]: 寫入 profitability_bvps 失敗，不影響本次回傳結果。', error);
   }
 
   return {

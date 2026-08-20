@@ -103,7 +103,7 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  // 把算完的結果存進 oingg-analysis DB 的 roe_result，供之後查歷史紀錄用。
+  // 把算完的結果存進 oingg-analysis DB 的 profitability_roe，供之後查歷史紀錄用。
   // 這是額外的存檔動作，不是這支 API 的主要契約——存檔失敗不應該讓已經算好的 ROE 回傳失敗。
   try {
     await analysisPrisma.roeResult.upsert({
@@ -139,7 +139,7 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
       },
     });
   } catch (error) {
-    console.error('[roe]: 寫入 roe_result 失敗，不影響本次回傳結果。', error);
+    console.error('[roe]: 寫入 profitability_roe 失敗，不影響本次回傳結果。', error);
   }
 
   return {

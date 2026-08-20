@@ -95,7 +95,7 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 roa_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 profitability_roa，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.roaResult.upsert({
       where: {
@@ -128,7 +128,7 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
       },
     });
   } catch (error) {
-    console.error('[roa]: 寫入 roa_result 失敗，不影響本次回傳結果。', error);
+    console.error('[roa]: 寫入 profitability_roa 失敗，不影響本次回傳結果。', error);
   }
 
   return {

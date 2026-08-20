@@ -74,6 +74,13 @@ model QuarterlyBalanceSheet {
   nonCurrentLiabilities        BigInt?  @map("non_current_liabilities")
   totalLiabilities             BigInt?  @map("total_liabilities")
   capitalStock                 BigInt?  @map("capital_stock")
+  // 特別股分兩種：分類為權益的（preferredStockCapital）跟分類為金融負債的（preferredStockLiability，
+  // 通常是可贖回特別股，依 IFRS 分類為負債）。preferredStockLiability 已經算在 totalLiabilities 裡面，
+  // 不要重複扣——NCAV 只需要扣 preferredStockCapital。用台積電（2330）/2887 實測驗證過
+  // totalLiabilities + totalEquity = totalAssets 這個恆等式成立，證實 preferredStockLiability
+  // 沒有被排除在 totalLiabilities 之外。
+  preferredStockCapital        BigInt?  @map("preferred_stock_capital")
+  preferredStockLiability      BigInt?  @map("preferred_stock_liability")
   capitalSurplus               BigInt?  @map("capital_surplus")
   retainedEarnings             BigInt?  @map("retained_earnings")
   otherEquity                  BigInt?  @map("other_equity")

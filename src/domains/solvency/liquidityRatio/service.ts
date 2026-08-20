@@ -44,7 +44,7 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
 
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 liquidity_ratio_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 solvency_liquidity_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.liquidityRatioResult.upsert({
       where: {
@@ -79,7 +79,7 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
       },
     });
   } catch (error) {
-    console.error('[liquidity-ratio]: 寫入 liquidity_ratio_result 失敗，不影響本次回傳結果。', error);
+    console.error('[liquidity-ratio]: 寫入 solvency_liquidity_ratio 失敗，不影響本次回傳結果。', error);
   }
 
   return {

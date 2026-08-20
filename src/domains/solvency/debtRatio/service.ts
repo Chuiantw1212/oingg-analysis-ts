@@ -34,7 +34,7 @@ export const calculateDebtRatio = async (query: DebtRatioQuery): Promise<DebtRat
 
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 debt_ratio_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 solvency_debt_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.debtRatioResult.upsert({
       where: {
@@ -61,7 +61,7 @@ export const calculateDebtRatio = async (query: DebtRatioQuery): Promise<DebtRat
       },
     });
   } catch (error) {
-    console.error('[debt-ratio]: 寫入 debt_ratio_result 失敗，不影響本次回傳結果。', error);
+    console.error('[debt-ratio]: 寫入 solvency_debt_ratio 失敗，不影響本次回傳結果。', error);
   }
 
   return {

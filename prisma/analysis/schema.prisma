@@ -7,6 +7,14 @@
 //
 // 異動這裡的 model 後，用 `pnpm prisma:analysis:migrate` 產生/套用 migration（不要對
 // ../schema.prisma 那份跑 migrate，那份永遠只用 db pull 內省）。
+//
+// 表名（@@map）命名規則：`<分類>_<指標>`，跟 src/domains 底下的分類資料夾一一對應（例如
+// guru/ncav/ 對應 guru_ncav），不要加 `_result` 這種沒有識別意義的字尾。2026-08-20 從舊的
+// `<指標>_result` 命名（例如 roe_result）統一改成這個規則；當指標名稱本身已經以分類開頭時
+// （例如 turnover 分類底下的 turnoverRatio），不要重複疊字首（是 turnover_ratio，不是
+// turnover_turnover_ratio）。Prisma model 名稱（RoeResult 這種）維持不變，只有實際的 SQL
+// 表名（@@map）換了，所以這次改名完全不影響任何 TypeScript 程式碼——`analysisPrisma.roeResult`
+// 這種呼叫方式照舊。
 
 generator client {
   provider = "prisma-client-js"
@@ -44,7 +52,7 @@ model RoeResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("roe_result")
+  @@map("profitability_roe")
 }
 
 // BVPS（每股淨值）計算結果——欄位對應 src/domains/profitability/bvps/types.ts 的 BvpsResult。
@@ -73,7 +81,7 @@ model BvpsResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("bvps_result")
+  @@map("profitability_bvps")
 }
 
 // EPS（每股盈餘）計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult 同一種結構），
@@ -107,7 +115,7 @@ model EpsResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("eps_result")
+  @@map("profitability_eps")
 }
 
 // 每股營收計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult / EpsResult 同一種結構）。
@@ -140,7 +148,7 @@ model RevenuePerShareResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("revenue_per_share_result")
+  @@map("profitability_revenue_per_share")
 }
 
 // 每股現金流（OCF/FCF）計算結果——單季、單季年化、TTM 都是同一張表的欄位，OCF 跟 FCF 也共用同一張表
@@ -181,7 +189,7 @@ model CashFlowPerShareResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("cash_flow_per_share_result")
+  @@map("cash_flow_per_share")
 }
 
 // ROA 計算結果——結構跟 RoeResult 一致（單季/年化/TTM 三欄位），分母換成總資產。
@@ -209,7 +217,7 @@ model RoaResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("roa_result")
+  @@map("profitability_roa")
 }
 
 // 負債比率計算結果——純資產負債表的時點快照，沒有單季/年化/TTM 的區別（不像 RoeResult/RoaResult）。
@@ -234,7 +242,7 @@ model DebtRatioResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("debt_ratio_result")
+  @@map("solvency_debt_ratio")
 }
 
 // 流動比率／速動比率計算結果——兩個指標共用同一張表（跟 CashFlowPerShareResult 的 OCF/FCF 一樣的理由：
@@ -264,7 +272,7 @@ model LiquidityRatioResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("liquidity_ratio_result")
+  @@map("solvency_liquidity_ratio")
 }
 
 // 存貨／應收帳款／總資產周轉率計算結果——三個指標共用同一張表（同一組損益表+資產負債表查詢、
@@ -311,7 +319,7 @@ model TurnoverRatioResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("turnover_ratio_result")
+  @@map("turnover_ratio")
 }
 
 // 資本支出佔營收比計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
@@ -340,7 +348,7 @@ model CapexToRevenueResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("capex_to_revenue_result")
+  @@map("turnover_capex_to_revenue")
 }
 
 // 毛利率／營業利益率／稅後淨利率計算結果——三個指標共用同一張表（同一組損益表查詢、同一組 TTM
@@ -382,7 +390,7 @@ model MarginsResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("margins_result")
+  @@map("profitability_margins")
 }
 
 // 負債權益比計算結果——純資產負債表時點快照，沒有單季/年化/TTM 的區別（跟 DebtRatioResult 同一種結構）。
@@ -409,7 +417,7 @@ model DeRatioResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("de_ratio_result")
+  @@map("solvency_de_ratio")
 }
 
 // 利息保障倍數計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
@@ -438,7 +446,7 @@ model InterestCoverageResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("interest_coverage_result")
+  @@map("solvency_interest_coverage")
 }
 
 // 淨負債對 EBITDA 比計算結果——第一個同時需要查三張財報表的指標（資產負債表算淨負債、
@@ -472,7 +480,7 @@ model NetDebtToEbitdaResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("net_debt_to_ebitda_result")
+  @@map("solvency_net_debt_to_ebitda")
 }
 
 // PER/PBR/股利殖利率查詢結果——本服務第一個「不是自己算，而是直接採用外部資料源現成數字」的指標，
@@ -496,7 +504,7 @@ model MarketRatiosResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, tradeDate])
-  @@map("market_ratios_result")
+  @@map("valuation_market_ratios")
 }
 
 // 葛拉漢數計算結果——本服務第一個複合指標，直接引用 EpsResult 的 TTM EPS 跟 BvpsResult 的 BVPS，
@@ -523,5 +531,38 @@ model GrahamNumberResult {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
-  @@map("graham_number_result")
+  @@map("guru_graham_number")
+}
+
+// 葛拉漢淨流動資產價值（NCAV）與安全邊際價計算結果——純資產負債表時點快照，沒有單季/年化/TTM 的區別
+// （跟 DebtRatioResult 同一種結構）。欄位對應 src/domains/guru/ncav/types.ts 的 NcavResult。
+model NcavResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  ncav                Decimal? @map("ncav") @db.Decimal(14, 4)
+  marginOfSafetyPrice Decimal? @map("margin_of_safety_price") @db.Decimal(14, 4)
+
+  currentAssetsValue    BigInt? @map("current_assets_value")
+  totalLiabilitiesValue BigInt? @map("total_liabilities_value")
+  // 只計入分類為權益的特別股；查不到欄位視為 0（沒有特別股），不是資料缺漏。
+  preferredStockValue   BigInt? @map("preferred_stock_value")
+
+  paidInShares               BigInt? @map("paid_in_shares")
+  // capital_stock_history 裡實際套用的那筆紀錄生效於何時（西元年月），不是本季的民國年季。
+  capitalStockEffectiveYear  Int?    @map("capital_stock_effective_year")
+  capitalStockEffectiveMonth Int?    @map("capital_stock_effective_month")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_ncav")
 }

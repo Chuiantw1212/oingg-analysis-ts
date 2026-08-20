@@ -48,7 +48,7 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
 
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 de_ratio_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 solvency_de_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.deRatioResult.upsert({
       where: {
@@ -77,7 +77,7 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
       },
     });
   } catch (error) {
-    console.error('[de-ratio]: 寫入 de_ratio_result 失敗，不影響本次回傳結果。', error);
+    console.error('[de-ratio]: 寫入 solvency_de_ratio 失敗，不影響本次回傳結果。', error);
   }
 
   return {

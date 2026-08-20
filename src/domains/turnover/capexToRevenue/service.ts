@@ -99,7 +99,7 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
 
   const reportDate = currentIncomeStatement?.reportDate ?? currentCashFlow?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 capex_to_revenue_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 turnover_capex_to_revenue，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.capexToRevenueResult.upsert({
       where: {
@@ -132,7 +132,7 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
       },
     });
   } catch (error) {
-    console.error('[capex-to-revenue]: 寫入 capex_to_revenue_result 失敗，不影響本次回傳結果。', error);
+    console.error('[capex-to-revenue]: 寫入 turnover_capex_to_revenue 失敗，不影響本次回傳結果。', error);
   }
 
   return {

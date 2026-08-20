@@ -33,7 +33,7 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
     'peRatio/pbRatio/dividendYieldPct 直接來自 oingg-twse 的 daily_valuation，本服務沒有自己重算，對方 EPS 用的是單季/TTM/年度哪種口徑並不清楚，跟本服務自己算的 EPS/BVPS 口徑不保證一致。'
   );
 
-  // 存進 oingg-analysis DB 的 market_ratios_result，用 symbol+tradeDate 當 key（不是財務季度）。
+  // 存進 oingg-analysis DB 的 valuation_market_ratios，用 symbol+tradeDate 當 key（不是財務季度）。
   // 存檔失敗不應該讓已經查好的結果回傳失敗；如果連交易日都查不到（tradeDate 是 null）就沒有 key 可以存，直接跳過。
   if (tradeDate) {
     try {
@@ -43,7 +43,7 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
         update: { peRatio, pbRatio, dividendYieldPct, warnings },
       });
     } catch (error) {
-      console.error('[market-ratios]: 寫入 market_ratios_result 失敗，不影響本次回傳結果。', error);
+      console.error('[market-ratios]: 寫入 valuation_market_ratios 失敗，不影響本次回傳結果。', error);
     }
   }
 

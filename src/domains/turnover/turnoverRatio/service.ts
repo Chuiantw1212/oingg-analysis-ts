@@ -114,7 +114,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 turnover_ratio_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 turnover_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.turnoverRatioResult.upsert({
       where: {
@@ -175,7 +175,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
       },
     });
   } catch (error) {
-    console.error('[turnover-ratio]: 寫入 turnover_ratio_result 失敗，不影響本次回傳結果。', error);
+    console.error('[turnover-ratio]: 寫入 turnover_ratio 失敗，不影響本次回傳結果。', error);
   }
 
   return {

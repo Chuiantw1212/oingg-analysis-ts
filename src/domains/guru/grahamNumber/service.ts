@@ -10,7 +10,7 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
   const warnings: string[] = [];
 
   // 直接引用已經做好的 eps/、bvps/ 服務，不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯——
-  // 副作用是這兩支服務各自也會 upsert 自己的 eps_result/bvps_result，這是預期行為，不是意外。
+  // 副作用是這兩支服務各自也會 upsert 自己的 profitability_eps/profitability_bvps，這是預期行為，不是意外。
   const [epsResult, bvpsResult] = await Promise.all([calculateEps(query), calculateBvps(query)]);
 
   const epsTtm = epsResult.epsTtm;
@@ -30,7 +30,7 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
 
   const reportDate = bvpsResult.reportDate ?? epsResult.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 graham_number_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 guru_graham_number，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.grahamNumberResult.upsert({
       where: {
@@ -57,7 +57,7 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
       },
     });
   } catch (error) {
-    console.error('[graham-number]: 寫入 graham_number_result 失敗，不影響本次回傳結果。', error);
+    console.error('[graham-number]: 寫入 guru_graham_number 失敗，不影響本次回傳結果。', error);
   }
 
   return {

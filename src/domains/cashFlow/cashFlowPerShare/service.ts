@@ -117,7 +117,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
     if (fcfTtmValue !== null) fcfPerShareTtm = toPerShare(fcfTtmValue, paidInShares);
   }
 
-  // 存進 oingg-analysis DB 的 cash_flow_per_share_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 cash_flow_per_share，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.cashFlowPerShareResult.upsert({
       where: {
@@ -164,7 +164,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
       },
     });
   } catch (error) {
-    console.error('[cash-flow-per-share]: 寫入 cash_flow_per_share_result 失敗，不影響本次回傳結果。', error);
+    console.error('[cash-flow-per-share]: 寫入 cash_flow_per_share 失敗，不影響本次回傳結果。', error);
   }
 
   return {

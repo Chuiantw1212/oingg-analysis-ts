@@ -133,7 +133,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? currentCashFlow?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 net_debt_to_ebitda_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 solvency_net_debt_to_ebitda，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.netDebtToEbitdaResult.upsert({
       where: {
@@ -168,7 +168,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
       },
     });
   } catch (error) {
-    console.error('[net-debt-to-ebitda]: 寫入 net_debt_to_ebitda_result 失敗，不影響本次回傳結果。', error);
+    console.error('[net-debt-to-ebitda]: 寫入 solvency_net_debt_to_ebitda 失敗，不影響本次回傳結果。', error);
   }
 
   return {

@@ -1,25 +1,27 @@
 import { Router } from 'ultimate-express';
-import { getGrahamNumber } from './controller';
+import { getNcav } from './controller';
 
 const router = Router();
 
 /**
  * @swagger
- * /api/guru/graham-number:
+ * /api/guru/ncav:
  *   get:
- *     summary: 計算單一公司單季葛拉漢數（Graham Number）
+ *     summary: 計算單一公司單季葛拉漢淨流動資產價值（NCAV）與安全邊際價
  *     description: >
- *       本服務第一個「複合指標」——直接引用已經做好的 GET /api/profitability/eps 跟
- *       GET /api/profitability/bvps 兩支服務算出來的值，不重複實作淨利/權益口徑選擇、
- *       流通股數查詢那些邏輯。呼叫這支 API 時，eps/bvps 服務也會各自照常把自己的計算結果
- *       upsert 進 profitability_eps/profitability_bvps，這是預期的副作用，不是意外。
+ *       直接讀取 oingg-mops-ts 已寫入資料庫的資產負債表與股本歷史資料進行計算，本服務本身不向 MOPS 抓取資料，
+ *       若資料庫中查無該季資料請先透過 oingg-mops-ts 的 ingest API 抓取。
  *
  *       計算口徑：
- *       - 葛拉漢數 = sqrt(22.5 x EPS(TTM) x BVPS)。
- *       - 出處：葛拉漢認為本益比不超過 15 倍、股價淨值比不超過 1.5 倍的股票才算便宜，
- *         兩者乘積上限 15 x 1.5 = 22.5，推導出合理價上限 sqrt(22.5 x EPS x BVPS)。
- *       - EPS 用 TTM（近四季滾動），不是單季或簡單年化版本。
- *       - EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值），會在 warnings 註明。
+ *       - NCAV = (流動資產 - 總負債 - 特別股) / 流通股數。
+ *       - 特別股只計入分類為權益的部分（preferredStockCapital）。分類為金融負債的特別股
+ *         （preferredStockLiability，通常是可贖回特別股）已經算在總負債裡面，不會重複扣。
+ *         查不到欄位（或本來就沒有特別股）視為 0，不是資料缺漏。
+ *       - marginOfSafetyPrice（安全邊際價） = NCAV x (2/3)——葛拉漢認為用低於 NCAV 三分之二的
+ *         價格買進才有足夠安全邊際。
+ *       - 純資產負債表時點快照，沒有單季/年化/TTM 的區別。
+ *       - **這個公式不適用金融/保險業**：這類公司的資產負債表不採流動/非流動分類，`currentAssets`
+ *         查不到會直接回傳 null，這是正常情境，不是伺服器錯誤。
  *     tags:
  *       - Ratios
  *     parameters:
@@ -66,6 +68,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/graham-number', getGrahamNumber);
+router.get('/ncav', getNcav);
 
 export default router;

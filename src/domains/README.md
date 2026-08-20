@@ -11,7 +11,7 @@
 | [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 只剩 Altman Z-Score（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比都完成了） |
 | [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 部分實作（每股 OCF/FCF） |
 | [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield，直接採用 oingg-twse 現成數字） |
-| [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數，本服務第一個複合指標——直接引用 eps/bvps 服務，不重複查資料庫） |
+| [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`——用到 oingg-mops-ts 新增的特別股欄位） |
 | [`technical/`](technical/README.md) | 技術分析與價格量能指標 | Security | 未實作——需要日線價量資料源，目前完全沒有 |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 未實作——需要「投資組合」這個資料模型，目前只有單一公司查詢 |
 | [`macro/`](macro/README.md) | 總體經濟、固定收益與市場情緒 | Market_Macro | 未實作——需要總體經濟/債券/選擇權資料源，跟公司財報完全無關 |

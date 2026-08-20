@@ -78,7 +78,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
 
   const reportDate = currentIncomeStatement?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 interest_coverage_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 solvency_interest_coverage，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.interestCoverageResult.upsert({
       where: {
@@ -111,7 +111,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
       },
     });
   } catch (error) {
-    console.error('[interest-coverage]: 寫入 interest_coverage_result 失敗，不影響本次回傳結果。', error);
+    console.error('[interest-coverage]: 寫入 solvency_interest_coverage 失敗，不影響本次回傳結果。', error);
   }
 
   return {

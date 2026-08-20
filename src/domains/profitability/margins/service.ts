@@ -100,7 +100,7 @@ export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResu
 
   const reportDate = currentIncomeStatement?.reportDate ?? null;
 
-  // 存進 oingg-analysis DB 的 margins_result，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 profitability_margins，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.marginsResult.upsert({
       where: {
@@ -151,7 +151,7 @@ export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResu
       },
     });
   } catch (error) {
-    console.error('[margins]: 寫入 margins_result 失敗，不影響本次回傳結果。', error);
+    console.error('[margins]: 寫入 profitability_margins 失敗，不影響本次回傳結果。', error);
   }
 
   return {

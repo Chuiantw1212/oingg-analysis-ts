@@ -2,17 +2,17 @@
 
 - **scope**：Security
 - **說明**：整合經典大師選股準則、動態成長折現與多因子基本面評分模型。
-- **狀態**：部分實作（葛拉漢數，本服務自行歸類的指標，見下方）。
+- **狀態**：部分實作（`Graham_NCAV`、葛拉漢數——後者是本服務自行歸類的指標，見下方）。
 
-## 為什麼 taxonomy 明列的指標都還沒做
+## 為什麼其他 taxonomy 明列的指標還沒做
 
-這類指標是組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，帶有特定投資人流派的主觀判斷，跟其他分類「直接從財報算出來的數字」性質不同。多數（`Greenblatt_Magic_Formula`、`Lynch_PEG_Fair_Value`）需要先有 [`../valuation/`](../valuation/README.md) 的股價/市值資料源才能做；`Graham_NCAV`、`Piotroski_F_Score`、`Mohanram_G_Score` 理論上不需要股價（`Graham_NCAV` 例外，公式裡有股數但沒有股價），但都是多變量組合模型，建議等更多基礎指標（尤其是 [`../solvency/`](../solvency/README.md)、[`../turnover/`](../turnover/README.md) 剩下的指標）補齊後再回頭做，減少重複查詢跟邏輯拆分的成本。
+這類指標是組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，帶有特定投資人流派的主觀判斷，跟其他分類「直接從財報算出來的數字」性質不同。`Greenblatt_Magic_Formula`、`Lynch_PEG_Fair_Value` 需要先有 [`../valuation/`](../valuation/README.md) 的股價/市值資料源才能做；`Piotroski_F_Score`、`Mohanram_G_Score` 是多變量組合模型，建議等更多基礎指標（尤其是 [`../solvency/`](../solvency/README.md)、[`../turnover/`](../turnover/README.md) 剩下的指標）補齊後再回頭做，減少重複查詢跟邏輯拆分的成本。
 
 ## 指標清單
 
 | code | 中文名稱 | 公式 | supported_periods | 說明 |
 |---|---|---|---|---|
-| `Graham_NCAV` | 葛拉漢淨流動資產價值 | `(Current Assets - Total Liabilities - Preferred Stock) / Shares` | MRQ, FY | 計算每股流動資產扣除總負債後淨額，檢視極端安全邊際 |
+| `Graham_NCAV` | 葛拉漢淨流動資產價值 | `(Current Assets - Total Liabilities - Preferred Stock) / Shares` | MRQ, FY | ✅ 已實作 — [`ncav/`](ncav/)，`GET /api/guru/ncav`。同時回傳安全邊際價（NCAV x 2/3），見下方說明 |
 | `Greenblatt_Magic_Formula` | 葛林布雷神奇公式 | `Rank(Earnings Yield = EBIT/EV) + Rank(ROC = EBIT/(Net Working Capital + Net Fixed Assets))` | TTM, FY | 結合高盈餘殖利率與高資本報酬率之雙因子綜合排名模型 |
 | `Lynch_PEG_Fair_Value` | 彼得林區本益成長模型 | `PEG = PER / Expected Growth Rate; Fair Value = Expected Growth Rate * EPS` | Forward, TTM | 以預期成長率校正傳統本益比，設定成長股之動態合理估值 |
 | `Buffett_Owner_Earnings` | 巴菲特股東盈餘 | `Net Income + D&A - Maintenance CapEx` | TTM, FY | 衡量企業在維持現有競爭力下，股東真正能自由提領的實質現金 |
@@ -28,6 +28,13 @@
 
 taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。
 
-**本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`../profitability/eps/service.ts`](../profitability/eps/service.ts)）跟 `calculateBvps`（[`../profitability/bvps/service.ts`](../profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `eps_result`/`bvps_result`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
+**本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`../profitability/eps/service.ts`](../profitability/eps/service.ts)）跟 `calculateBvps`（[`../profitability/bvps/service.ts`](../profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
 
 葛拉漢數用 **TTM EPS**（不是單季或簡單年化版本）；EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值）。已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 133.01 x 248.05)` = 葛拉漢數 861.59 元。
+
+## Graham_NCAV（NCAV）計算口徑
+
+- **公式**：NCAV = (流動資產 − 總負債 − 特別股) / 流通股數；回應同時附上安全邊際價 = NCAV x (2/3)——葛拉漢認為用低於 NCAV 三分之二的價格買進才有足夠安全邊際。純資產負債表時點快照，沒有單季/年化/TTM 的區別。
+- **特別股欄位一開始是死路，後來 oingg-mops-ts 補上了**：`quarterly_balance_sheet` 原本沒有拆出特別股，2026-08-20 新增了 `preferredStockCapital`（分類為權益）跟 `preferredStockLiability`（分類為金融負債，通常是可贖回特別股）兩個欄位。**NCAV 只扣 `preferredStockCapital`**——`preferredStockLiability` 已經算在 `totalLiabilities` 裡面，重複扣會低估 NCAV。這是用台積電/2887 的資料驗證 `totalLiabilities + totalEquity = totalAssets` 這個恆等式成立才確認的，不是憑空假設。查不到欄位（或本來就沒有特別股）視為 0，不是資料缺漏。
+- **這個公式不適用金融/保險業**：查了全部 13 家公司，`2838`、`2850`、`2867`、`2887`、`5843` 這 5 家（都是金控/保險股）`currentAssets` 全部是 `null`——銀行/金控的資產負債表本來就不按流動/非流動分類，NCAV 這個公式本來就是設計給一般產業公司用的，不是資料沒抓到。查詢這幾家公司會正確回傳 `null` 並在 `warnings` 說明原因。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：流動資產 4,565,700,742 千元 − 總負債 2,901,183,746 千元 − 特別股 0 = NCAV 64.19 元、安全邊際價 42.79 元。用 2887（金控）驗證正確回傳 `null` 並列出三個原因（`currentAssets` 為 null、偵測到有特別股已扣除、`capital_stock_history` 查無資料）。
