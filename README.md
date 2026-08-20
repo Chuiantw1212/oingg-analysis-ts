@@ -30,7 +30,7 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 - `domains/profitability/`、`domains/cashFlow/`、`domains/solvency/`、`domains/turnover/`：目前唯四有實作的分類，底下才有真的 domain（`types.ts` / `service.ts` / `controller.ts` / `route.ts`）。
 - `domains/valuation/`、`domains/guru/`、`domains/technical/`、`domains/portfolio/`、`domains/macro/`：目前只有 `README.md` 記錄這一類要放哪些指標，還沒有任何程式碼——這是刻意的，先把分類骨架跟每個指標的公式/口徑記下來，之後要做哪個再回頭建 domain。
 
-這個分類只影響 `src/domains` 底下的資料夾結構，**API 路徑不變**——`/api/ratios/eps`、`/api/ratios/bvps` 等既有 endpoint 照舊，之後新指標也會掛在同一個扁平的 `/api/ratios/*` 底下，不會因為程式碼分層多一層路徑。
+URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 `/api/profitability/roe`），維護時可以直接照 URL 找到程式碼位置，不用另外記一份對照表。這條路徑經過兩次刻意的演進：一開始是扁平的 `/api/ratios/eps`；加上分類結構後改成 `/api/ratios/profitability/eps`；最後發現分類本身已經表達了「這是財務指標」，`ratios` 這層純粹是重複資訊，才拿掉變成現在的 `/api/profitability/eps`。每一次都是一次性 breaking change，沒有保留舊路徑。各分類底下的路由怎麼掛，見 [`src/routes.ts`](src/routes.ts)（用 `apiRouter.use('/profitability', roeRouter, roaRouter, ...)` 這種方式把分類前綴跟各指標的 router 組起來，每個指標自己的 `route.ts` 不需要知道自己屬於哪個分類前綴）。
 
 `src/shared/rocQuarter.ts` 是從 oingg-mops-ts 同名檔案複製、只保留 `getPastNQuarters` 的精簡版（本服務不判斷「最新應公告季度」，也不需要 `getQuarterEndDate`）。
 
@@ -46,15 +46,15 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 
 跟上面「唯讀鏡像」的 `prisma/schema.prisma` 不同，`prisma/analysis/schema.prisma` 連到獨立的 Neon 專案 **oingg-analysis**（`.env` 的 `ANALYSIS_DATABASE_URL` / `ANALYSIS_DIRECT_URL`），本服務自己擁有這裡的 schema/migration，存的是**算完的投資指標結果**（不是原始財報資料）。每個指標各自一張表，因為算法/週期不一樣（ROE 有單季/年化/TTM，之後 Beta 之類可能是半年/一年），不共用一套通用結構。目前只有：
 
-- **`RoeResult`**（`roe_result`）：`GET /api/ratios/roe` 每次算完會 upsert 一筆進去（依 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`），欄位對應 `src/domains/profitability/roe/types.ts` 的 `RoeResult`。寫入失敗只會記 log，不會讓 API 回傳失敗——存檔是附加行為，不是這支 API 的主要契約。
-- **`BvpsResult`**（`bvps_result`）：`GET /api/ratios/bvps` 的持久化結果，欄位對應 `src/domains/profitability/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
-- **`EpsResult`**（`eps_result`）：`GET /api/ratios/eps` 的持久化結果，欄位對應 `src/domains/profitability/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
-- **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/ratios/revenue-per-share` 的持久化結果，欄位對應 `src/domains/profitability/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
-- **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/ratios/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/cashFlow/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
-- **`RoaResult`**（`roa_result`）：`GET /api/ratios/roa` 的持久化結果，欄位對應 `src/domains/profitability/roa/types.ts` 的 `RoaResult`。跟 `RoeResult` 同一種單季/年化/TTM 三欄位結構，分母換成總資產。
-- **`DebtRatioResult`**（`debt_ratio_result`）：`GET /api/ratios/debt-ratio` 的持久化結果，欄位對應 `src/domains/solvency/debtRatio/types.ts` 的 `DebtRatioResult`。純資產負債表時點快照，只有一個 `debtRatioPct` 欄位，沒有單季/年化/TTM 的區別。
-- **`LiquidityRatioResult`**（`liquidity_ratio_result`）：`GET /api/ratios/liquidity-ratio` 的持久化結果，欄位對應 `src/domains/solvency/liquidityRatio/types.ts` 的 `LiquidityRatioResult`。流動比率跟速動比率共用同一張表，一樣是純時點快照。
-- **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/ratios/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產三個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
+- **`RoeResult`**（`roe_result`）：`GET /api/profitability/roe` 每次算完會 upsert 一筆進去（依 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`），欄位對應 `src/domains/profitability/roe/types.ts` 的 `RoeResult`。寫入失敗只會記 log，不會讓 API 回傳失敗——存檔是附加行為，不是這支 API 的主要契約。
+- **`BvpsResult`**（`bvps_result`）：`GET /api/profitability/bvps` 的持久化結果，欄位對應 `src/domains/profitability/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
+- **`EpsResult`**（`eps_result`）：`GET /api/profitability/eps` 的持久化結果，欄位對應 `src/domains/profitability/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
+- **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/profitability/revenue-per-share` 的持久化結果，欄位對應 `src/domains/profitability/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
+- **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/cash-flow/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/cashFlow/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
+- **`RoaResult`**（`roa_result`）：`GET /api/profitability/roa` 的持久化結果，欄位對應 `src/domains/profitability/roa/types.ts` 的 `RoaResult`。跟 `RoeResult` 同一種單季/年化/TTM 三欄位結構，分母換成總資產。
+- **`DebtRatioResult`**（`debt_ratio_result`）：`GET /api/solvency/debt-ratio` 的持久化結果，欄位對應 `src/domains/solvency/debtRatio/types.ts` 的 `DebtRatioResult`。純資產負債表時點快照，只有一個 `debtRatioPct` 欄位，沒有單季/年化/TTM 的區別。
+- **`LiquidityRatioResult`**（`liquidity_ratio_result`）：`GET /api/solvency/liquidity-ratio` 的持久化結果，欄位對應 `src/domains/solvency/liquidityRatio/types.ts` 的 `LiquidityRatioResult`。流動比率跟速動比率共用同一張表，一樣是純時點快照。
+- **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/turnover/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產三個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
 
@@ -65,17 +65,19 @@ pnpm prisma:analysis:studio    # Prisma Studio 開這個 DB
 
 ## API 一覽
 
+URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/api/<分類>/<指標>`），維護時可以直接照路徑找到程式碼位置（見 [`src/domains/README.md`](src/domains/README.md) 的分類索引）。
+
 | Method + Path | 說明 |
 |---|---|
-| `GET /api/ratios/roe` | 計算單一公司單一季度的 ROE（單季、單季年化、TTM 三種數值） |
-| `GET /api/ratios/bvps` | 計算單一公司單一季度的 BVPS（每股淨值） |
-| `GET /api/ratios/eps` | 計算單一公司單一季度的 EPS（單季、單季年化、TTM 三種數值） |
-| `GET /api/ratios/revenue-per-share` | 計算單一公司單一季度的每股營收（單季、單季年化、TTM 三種數值） |
-| `GET /api/ratios/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
-| `GET /api/ratios/roa` | 計算單一公司單一季度的 ROA（資產報酬率，單季、單季年化、TTM 三種數值） |
-| `GET /api/ratios/debt-ratio` | 計算單一公司單一季度的負債比率 |
-| `GET /api/ratios/liquidity-ratio` | 計算單一公司單一季度的流動比率與速動比率 |
-| `GET /api/ratios/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產周轉率（單季、單季年化、TTM 三種數值） |
+| `GET /api/profitability/roe` | 計算單一公司單一季度的 ROE（單季、單季年化、TTM 三種數值） |
+| `GET /api/profitability/roa` | 計算單一公司單一季度的 ROA（資產報酬率，單季、單季年化、TTM 三種數值） |
+| `GET /api/profitability/bvps` | 計算單一公司單一季度的 BVPS（每股淨值） |
+| `GET /api/profitability/eps` | 計算單一公司單一季度的 EPS（單季、單季年化、TTM 三種數值） |
+| `GET /api/profitability/revenue-per-share` | 計算單一公司單一季度的每股營收（單季、單季年化、TTM 三種數值） |
+| `GET /api/cash-flow/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
+| `GET /api/solvency/debt-ratio` | 計算單一公司單一季度的負債比率 |
+| `GET /api/solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率與速動比率 |
+| `GET /api/turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產周轉率（單季、單季年化、TTM 三種數值） |
 
 Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 

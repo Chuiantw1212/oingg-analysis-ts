@@ -16,17 +16,13 @@ const router = Router();
 router.use(rootRouter);
 
 // --- API Routes ---
+// URL 路徑跟 src/domains 底下的分類資料夾一一對應，方便維護時直接照路徑找到程式碼位置。
 const apiRouter = Router();
-apiRouter.use(roeRouter);
-apiRouter.use(roaRouter);
-apiRouter.use(bvpsRouter);
-apiRouter.use(epsRouter);
-apiRouter.use(revenuePerShareRouter);
-apiRouter.use(cashFlowPerShareRouter);
-apiRouter.use(debtRatioRouter);
-apiRouter.use(liquidityRatioRouter);
-apiRouter.use(turnoverRatioRouter);
+apiRouter.use('/profitability', roeRouter, roaRouter, bvpsRouter, epsRouter, revenuePerShareRouter);
+apiRouter.use('/cash-flow', cashFlowPerShareRouter);
+apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter);
+apiRouter.use('/turnover', turnoverRatioRouter);
 
-router.use('/api/ratios', apiRouter);
+router.use('/api', apiRouter);
 
 export default router;

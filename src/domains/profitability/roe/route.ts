@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/ratios/roe:
+ * /api/profitability/roe:
  *   get:
  *     summary: 計算單一公司單季 ROE（股東權益報酬率）
  *     description: >

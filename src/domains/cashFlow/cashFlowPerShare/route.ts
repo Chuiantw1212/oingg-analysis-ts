@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/ratios/cash-flow-per-share:
+ * /api/cash-flow/cash-flow-per-share:
  *   get:
  *     summary: 計算單一公司單季每股營業現金流（OCF）與每股自由現金流（FCF）
  *     description: >

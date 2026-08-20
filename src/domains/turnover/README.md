@@ -11,7 +11,7 @@
 | `DIO` | 存貨週轉天數 | `(Average Inventory / COGS) * 365` | TTM, FY | ⬜ 未實作——本服務已有「次」為單位的存貨周轉率（見下方），`DIO` 是同概念的「天數」版本，`365 / 周轉次數` 即可換算，尚未直接提供 |
 | `DSO` | 應收帳款週轉天數 | `(Average Accounts Receivable / Credit Sales) * 365` | TTM, FY | ⬜ 未實作，同上，跟已實作的應收帳款周轉率是同概念的天數版本 |
 | `DPO` | 應付帳款週轉天數 | `(Average Accounts Payable / COGS) * 365` | TTM, FY | ⬜ 未實作 |
-| `Asset_Turnover` | 總資產週轉率 | `Revenue / Average Total Assets` | TTM, FY | ✅ 已實作 — [`turnoverRatio/`](turnoverRatio/)，`GET /api/ratios/turnover-ratio`（單季/年化/TTM）。taxonomy 用平均總資產，本服務用期末總資產，見下方說明 |
+| `Asset_Turnover` | 總資產週轉率 | `Revenue / Average Total Assets` | TTM, FY | ✅ 已實作 — [`turnoverRatio/`](turnoverRatio/)，`GET /api/turnover/turnover-ratio`（單季/年化/TTM）。taxonomy 用平均總資產，本服務用期末總資產，見下方說明 |
 | `Fixed_Asset_Turnover` | 固定資產週轉率 | `Revenue / Net Fixed Assets` | TTM, FY | ⬜ 未實作 |
 | `CapEx_to_Revenue` | 資本支出佔營收比 | `Capital Expenditures / Revenue` | TTM, FY | ⬜ 未實作 |
 

@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/ratios/revenue-per-share:
+ * /api/profitability/revenue-per-share:
  *   get:
  *     summary: 計算單一公司單季每股營收（單季、單季年化、TTM 三種數值）
  *     description: >

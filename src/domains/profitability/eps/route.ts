@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/ratios/eps:
+ * /api/profitability/eps:
  *   get:
  *     summary: 計算單一公司單季 EPS（每股盈餘：單季、單季年化、TTM 三種數值）
  *     description: >

@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/ratios/roa:
+ * /api/profitability/roa:
  *   get:
  *     summary: 計算單一公司單季 ROA（資產報酬率）
  *     description: >

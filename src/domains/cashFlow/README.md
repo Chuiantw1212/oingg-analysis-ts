@@ -7,7 +7,7 @@
 
 | code | 中文名稱 | 公式 | supported_periods | 狀態 |
 |---|---|---|---|---|
-| `FCF` | 自由現金流 | `Operating Cash Flow - Capital Expenditures` | TTM, FY, MRQ | ✅ 已實作（每股版本） — [`cashFlowPerShare/`](cashFlowPerShare/)，`GET /api/ratios/cash-flow-per-share`（單季/年化/TTM）。本服務算的是「每股 FCF」，不是 taxonomy 寫的公司總額，見下方說明 |
+| `FCF` | 自由現金流 | `Operating Cash Flow - Capital Expenditures` | TTM, FY, MRQ | ✅ 已實作（每股版本） — [`cashFlowPerShare/`](cashFlowPerShare/)，`GET /api/cash-flow/cash-flow-per-share`（單季/年化/TTM）。本服務算的是「每股 FCF」，不是 taxonomy 寫的公司總額，見下方說明 |
 | `FCF_Yield` | 自由現金流殖利率 | `Free Cash Flow Per Share / Stock Price` | TTM, FY | ⬜ 未實作，需要股價，屬於 [`../valuation/`](../valuation/README.md) 那條資料源缺口 |
 | `OCF_to_Net_Income` | 營運現金流對淨利比 | `Operating Cash Flow / Net Income` | TTM, FY | ⬜ 未實作 |
 | `Accruals_Ratio` | 應計項目比率 | `(Net Income - OCF - ICF) / Average Total Assets` | TTM, FY | ⬜ 未實作 |
