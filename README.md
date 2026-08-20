@@ -57,6 +57,7 @@ URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 
 - **`LiquidityRatioResult`**（`liquidity_ratio_result`）：`GET /api/solvency/liquidity-ratio` 的持久化結果，欄位對應 `src/domains/solvency/liquidityRatio/types.ts` 的 `LiquidityRatioResult`。流動比率、速動比率、現金比率共用同一張表，一樣是純時點快照。
 - **`DeRatioResult`**（`de_ratio_result`）：`GET /api/solvency/de-ratio` 的持久化結果，欄位對應 `src/domains/solvency/deRatio/types.ts` 的 `DeRatioResult`。純時點快照，只有一個 `deRatioPct` 欄位。
 - **`InterestCoverageResult`**（`interest_coverage_result`）：`GET /api/solvency/interest-coverage` 的持久化結果，欄位對應 `src/domains/solvency/interestCoverage/types.ts` 的 `InterestCoverageResult`。跟 `MarginsResult` 同一種「流量/流量」結構，只有單季/TTM 兩欄位，沒有年化。
+- **`NetDebtToEbitdaResult`**（`net_debt_to_ebitda_result`）：`GET /api/solvency/net-debt-to-ebitda` 的持久化結果，欄位對應 `src/domains/solvency/netDebtToEbitda/types.ts` 的 `NetDebtToEbitdaResult`。第一個要同時查三張財報表（資產負債表+損益表+現金流量表）的指標；淨負債是存量對 EBITDA 流量的比率，只有簡單年化/TTM 兩欄位，沒有原始單季版本。
 - **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/turnover/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產三個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
@@ -83,6 +84,7 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/api/<分類
 | `GET /api/solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率、速動比率與現金比率 |
 | `GET /api/solvency/de-ratio` | 計算單一公司單一季度的負債權益比 |
 | `GET /api/solvency/interest-coverage` | 計算單一公司單一季度的利息保障倍數（單季、TTM 兩種數值） |
+| `GET /api/solvency/net-debt-to-ebitda` | 計算單一公司單一季度的淨負債對 EBITDA 比（簡易年化、TTM 兩種數值） |
 | `GET /api/turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產周轉率（單季、單季年化、TTM 三種數值） |
 
 Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
@@ -156,13 +158,41 @@ Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年�
 - 不需要股本歷史，也不需要損益表，只查一次資產負債表。
 - 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：總負債 2,901,183,746 千元 ÷ 總資產 9,375,654,727 千元 = 負債比率 30.94%。
 
-## 流動比率／速動比率計算口徑
+## 流動比率／速動比率／現金比率計算口徑
 
-跟負債比率一樣是純資產負債表時點快照，沒有單季/年化/TTM 的區別。流動比率跟速動比率共用同一支 API、同一張表——理由跟每股現金流的 OCF/FCF 一樣：算速動比率一定要先有流動資產/流動負債，拆兩支 API 只會重複查同一張資產負債表。
+跟負債比率一樣是純資產負債表時點快照，沒有單季/年化/TTM 的區別。三個比率共用同一支 API、同一張表——分母都是流動負債，拆開只會重複查同一張資產負債表。
 
 - **`currentRatioPct`（流動比率）**：本季期末流動資產（`currentAssets`） / 本季期末流動負債（`currentLiabilities`） x 100。
 - **`quickRatioPct`（速動比率）**：`(currentAssets - inventory) / currentLiabilities` x 100。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：流動資產 4,565,700,742 千元、流動負債 1,857,761,825 千元、存貨 385,524,542 千元 → 流動比率 245.76%、速動比率 225.01%。
+- **`cashRatioPct`（現金比率）**：本季期末現金及約當現金（`cashAndEquivalents`） / `currentLiabilities` x 100。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：流動資產 4,565,700,742 千元、流動負債 1,857,761,825 千元、存貨 385,524,542 千元、現金及約當現金 3,134,218,213 千元 → 流動比率 245.76%、速動比率 225.01%、現金比率 168.71%。
+
+## 負債權益比計算口徑
+
+一樣是純資產負債表時點快照。跟負債比率（`Debt_to_Assets`）不同：分子不是總負債，是**有息負債**——`shortTermBorrowings`（短期借款） + `bondsPayable`（應付公司債） + `longTermBorrowings`（長期借款），不含應付帳款等營運性負債。三個欄位任一為 `null` 視為 0（沒有借那種負債），不是資料缺漏；只有整張資產負債表查無資料時才視為缺資料。
+
+- **`deRatioPct`**：本季期末有息負債 / 本季期末權益（跟 ROE 一樣優先採用 `equityAttributableToParent`，缺漏時退回 `totalEquity`） x 100。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：有息負債 864,263,674 千元（短期借款為 0、應付公司債 815,036,716 千元、長期借款 49,226,958 千元）÷ 權益 6,432,518,334 千元 = 負債權益比 13.44%。
+
+## 利息保障倍數計算口徑
+
+跟毛利率/營業利益率/稅後淨利率同一種「流量/流量」結構——只有單季跟 TTM 兩種口徑，沒有年化。財報沒有現成的 EBIT 欄位，用「稅前淨利 + 利息費用」反推。
+
+- **EBIT** = `profitBeforeTax`（稅前淨利） + `financeCosts`（利息費用）。
+- **`interestCoverageQuarterly`**：本季 EBIT / 本季利息費用。
+- **`interestCoverageTtm`**：近四季（含本季）EBIT/利息費用各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`。
+- 利息費用為零時無法計算（除以零），會列在 `warnings`。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：EBIT 865,515,135 千元 ÷ 利息費用 3,085,049 千元 = 利息保障倍數 280.55 次（TTM 195.85 次）——數字很高，符合台積電低負債的財務體質。
+
+## 淨負債對 EBITDA 比計算口徑
+
+**第一個要同時查三張財報表的指標**：資產負債表算淨負債（存量），損益表+現金流量表算 EBITDA（流量）。淨負債是存量，對「一年份」EBITDA 流量的比率才有標準意義，taxonomy 只支援 TTM/FY，不支援單季——所以沒有原始單季版本，只有簡單年化跟 TTM 兩種口徑。
+
+- **淨負債**：有息負債（`shortTermBorrowings` + `bondsPayable` + `longTermBorrowings`，邏輯跟負債權益比一樣） − 現金及約當現金（`cashAndEquivalents`）。可能是負數，代表淨現金部位而非淨負債。
+- **EBITDA** = EBIT（`profitBeforeTax` + `financeCosts`） + 折舊（`depreciation`） + 攤銷（`amortization`），折舊/攤銷來自現金流量表的間接法加回項目。
+- **`netDebtToEbitdaQuarterlyAnnualized`**：淨負債 / (本季 EBITDA x4)。
+- **`netDebtToEbitdaTtm`**：淨負債 / 近四季 EBITDA 實際加總，近四季資料須完整存在才會計算，否則為 `null`。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：有息負債 864,263,674 千元 − 現金 3,134,218,213 千元 = 淨負債 -2,269,954,539 千元（負數，淨現金部位）；本季 EBITDA 1,229,503,740 千元 → 年化比率 -0.46；近四季 EBITDA 加總 5,881,912,176 千元 → TTM 比率 -0.39。
 
 ## 周轉率計算口徑
 
@@ -188,7 +218,7 @@ Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年�
 
 ## 已知缺口 / Backlog
 
-- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率、周轉率、毛利率／營業利益率／稅後淨利率。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
+- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率／現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比、周轉率、毛利率／營業利益率／稅後淨利率。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
 - **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
 - **PER、PBR 等估值指標尚未實作**：卡在還沒有股價資料源，見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md)。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。

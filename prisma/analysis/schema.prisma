@@ -406,3 +406,37 @@ model InterestCoverageResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("interest_coverage_result")
 }
+
+// 淨負債對 EBITDA 比計算結果——第一個同時需要查三張財報表的指標（資產負債表算淨負債、
+// 損益表+現金流量表算 EBITDA）。淨負債是存量對 EBITDA 流量的比率，taxonomy 只支援 TTM/FY，
+// 沒有原始單季版本，只有簡單年化跟 TTM 兩種口徑。
+// 欄位對應 src/domains/solvency/netDebtToEbitda/types.ts 的 NetDebtToEbitdaResult。
+model NetDebtToEbitdaResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  netDebtToEbitdaQuarterlyAnnualized Decimal? @map("net_debt_to_ebitda_quarterly_annualized") @db.Decimal(14, 4)
+  netDebtToEbitdaTtm                 Decimal? @map("net_debt_to_ebitda_ttm") @db.Decimal(14, 4)
+
+  // 淨負債 = 有息負債 - 現金及約當現金，可能是負數（淨現金部位）。
+  netDebtValue            BigInt? @map("net_debt_value")
+  totalDebtValue          BigInt? @map("total_debt_value")
+  cashAndEquivalentsValue BigInt? @map("cash_and_equivalents_value")
+
+  // EBITDA = EBIT（稅前淨利+利息費用） + 折舊 + 攤銷。
+  ebitdaQuarterlyValue BigInt? @map("ebitda_quarterly_value")
+  ebitdaTtmValue       BigInt? @map("ebitda_ttm_value") // 近四季加總；資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("net_debt_to_ebitda_result")
+}
