@@ -6,11 +6,11 @@
 
 | 資料夾 | 中文名稱 | scope | 狀態 |
 |---|---|---|---|
-| [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 部分實作（ROE、ROA、EPS、BVPS、每股營收） |
-| [`turnover/`](turnover/README.md) | 營運週轉與資產效率 | Security | 部分實作（存貨/應收帳款/總資產周轉率） |
-| [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 部分實作（負債比率、流動比率、速動比率） |
+| [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 部分實作（ROE、ROA、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率） |
+| [`turnover/`](turnover/README.md) | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/總資產/固定資產周轉率、資本支出佔營收比） |
+| [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 只剩 Altman Z-Score（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比都完成了） |
 | [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 部分實作（每股 OCF/FCF） |
-| [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 未實作——卡在沒有股價資料源 |
+| [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield，直接採用 oingg-twse 現成數字） |
 | [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 未實作——多數依賴 valuation 先有股價 |
 | [`technical/`](technical/README.md) | 技術分析與價格量能指標 | Security | 未實作——需要日線價量資料源，目前完全沒有 |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 未實作——需要「投資組合」這個資料模型，目前只有單一公司查詢 |
@@ -30,4 +30,4 @@
 
 ## 跟既有指標的對應說明（現況 vs 理想 taxonomy）
 
-taxonomy 是理想化的分類文件，現有 9 個已實作指標裡，有 2 個（BVPS、每股營收）不是 taxonomy 明列的獨立 code，是因為跟 EPS 同屬「每股基礎財務數字」家族，被放進 `profitability`——各分類 README 裡有標注哪些是「taxonomy 明列」、哪些是「本服務自行歸類」。
+taxonomy 是理想化的分類文件，已實作指標裡有 2 個（BVPS、每股營收）不是 taxonomy 明列的獨立 code，是因為跟 EPS 同屬「每股基礎財務數字」家族，被放進 `profitability`——各分類 README 裡有標注哪些是「taxonomy 明列」、哪些是「本服務自行歸類」，也有標注哪些指標的公式跟 taxonomy 原文有差異（例如用期末值取代平均值、用有息負債取代總負債）。詳細的已實作/未實作清單、公式、口徑差異都在各分類自己的 README，這裡不重複列，只維護分類層級的總覽。

@@ -12,8 +12,8 @@
 | `DSO` | 應收帳款週轉天數 | `(Average Accounts Receivable / Credit Sales) * 365` | TTM, FY | ⬜ 未實作，同上，跟已實作的應收帳款周轉率是同概念的天數版本 |
 | `DPO` | 應付帳款週轉天數 | `(Average Accounts Payable / COGS) * 365` | TTM, FY | ⬜ 未實作 |
 | `Asset_Turnover` | 總資產週轉率 | `Revenue / Average Total Assets` | TTM, FY | ✅ 已實作 — [`turnoverRatio/`](turnoverRatio/)，`GET /api/turnover/turnover-ratio`（單季/年化/TTM）。taxonomy 用平均總資產，本服務用期末總資產，見下方說明 |
-| `Fixed_Asset_Turnover` | 固定資產週轉率 | `Revenue / Net Fixed Assets` | TTM, FY | ⬜ 未實作 |
-| `CapEx_to_Revenue` | 資本支出佔營收比 | `Capital Expenditures / Revenue` | TTM, FY | ⬜ 未實作 |
+| `Fixed_Asset_Turnover` | 固定資產週轉率 | `Revenue / Net Fixed Assets` | TTM, FY | ✅ 已實作 — 併入 [`turnoverRatio/`](turnoverRatio/)，`GET /api/turnover/turnover-ratio`（單季/年化/TTM）。分母用 `propertyPlantEquipment`（不動產、廠房及設備），一樣是期末餘額 |
+| `CapEx_to_Revenue` | 資本支出佔營收比 | `Capital Expenditures / Revenue` | TTM, FY | ✅ 已實作 — [`capexToRevenue/`](capexToRevenue/)，`GET /api/turnover/capex-to-revenue`（單季/TTM，沒有年化，見下方說明） |
 
 ## 已實作但跟 taxonomy 公式略有差異的地方
 
@@ -24,4 +24,6 @@
 
 ## 實作慣例
 
-存貨周轉率、應收帳款周轉率、總資產周轉率共用同一支 API/同一張表——三個都要查同一張損益表+資產負債表，也共用同一組 TTM 完整性判斷（一季只要營業成本或營收任一為 `null`，該季就整個視為不齊），拆開只會重複查詢。之後 `Fixed_Asset_Turnover`、`CapEx_to_Revenue` 如果要做，可以考慮併入同一張表，或視資料相依性另開。
+- 存貨周轉率、應收帳款周轉率、總資產周轉率、固定資產周轉率共用同一支 API/同一張表（[`turnoverRatio/`](turnoverRatio/)）——四個都要查同一張損益表+資產負債表，也共用同一組 TTM 完整性判斷（一季只要營業成本或營收任一為 `null`，該季就整個視為不齊），拆開只會重複查詢。
+- `CapEx_to_Revenue` 沒有併進 `turnoverRatio/`，另開 [`capexToRevenue/`](capexToRevenue/)——因為它是「流量/流量」比率（資本支出 / 營收，兩者都是當季數字），結構跟 `turnoverRatio/` 的「流量/存量」（營收 / 期末餘額）不同：只有單季跟 TTM 兩種口徑，沒有年化，反而跟 [`../profitability/margins/`](../profitability/margins/) 同一種結構。
+- `CapEx_to_Revenue` 要注意單位陷阱：資料庫裡 `capitalExpenditures` 本身是負數（現金流出），算比率時要取絕對值——不然算出來的比率會是負的，跟慣例不符。

@@ -300,10 +300,10 @@ model TurnoverRatioResult {
   operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收
   operatingRevenueTtmValue BigInt? @map("operating_revenue_ttm_value") // 近四季加總；資料不齊則為 null
 
-  inventoryValue               BigInt? @map("inventory_value") // 本季期末存貨
-  accountsReceivableValue      BigInt? @map("accounts_receivable_value") // 本季期末應收帳款
-  totalAssetsValue              BigInt? @map("total_assets_value") // 本季期末總資產
-  propertyPlantEquipmentValue   BigInt? @map("property_plant_equipment_value") // 本季期末不動產、廠房及設備
+  inventoryValue              BigInt? @map("inventory_value") // 本季期末存貨
+  accountsReceivableValue     BigInt? @map("accounts_receivable_value") // 本季期末應收帳款
+  totalAssetsValue            BigInt? @map("total_assets_value") // 本季期末總資產
+  propertyPlantEquipmentValue BigInt? @map("property_plant_equipment_value") // 本季期末不動產、廠房及設備
 
   warnings String[]
 
@@ -312,6 +312,35 @@ model TurnoverRatioResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("turnover_ratio_result")
+}
+
+// 資本支出佔營收比計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
+// 欄位對應 src/domains/turnover/capexToRevenue/types.ts 的 CapexToRevenueResult。
+model CapexToRevenueResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  capexToRevenueQuarterly Decimal? @map("capex_to_revenue_quarterly") @db.Decimal(10, 2)
+  capexToRevenueTtm       Decimal? @map("capex_to_revenue_ttm") @db.Decimal(10, 2)
+
+  // capitalExpenditures 原始值是負數（現金流出）。
+  capitalExpendituresValue    BigInt? @map("capital_expenditures_value")
+  capitalExpendituresTtmValue BigInt? @map("capital_expenditures_ttm_value") // 近四季加總（負數）；資料不齊則為 null
+  operatingRevenueValue       BigInt? @map("operating_revenue_value")
+  operatingRevenueTtmValue    BigInt? @map("operating_revenue_ttm_value") // 近四季加總；資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("capex_to_revenue_result")
 }
 
 // 毛利率／營業利益率／稅後淨利率計算結果——三個指標共用同一張表（同一組損益表查詢、同一組 TTM
@@ -444,4 +473,28 @@ model NetDebtToEbitdaResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("net_debt_to_ebitda_result")
+}
+
+// PER/PBR/股利殖利率查詢結果——本服務第一個「不是自己算，而是直接採用外部資料源現成數字」的指標，
+// 也是第一個不跟財務季度掛鉤的指標。PER/PBR 是逐日的市場資料（跟 daily_valuation 同一種時間刻度），
+// 不是「某季度的數字」——一開始誤把它硬套進 symbol+year+season+dataType+subsidiaryCompanyId
+// 那套季度查詢模板，查歷史季度會永遠查不到資料（市場資料的起始日晚於任何已報過的季度），
+// 已改成用 symbol+tradeDate 做 PK，跟 oingg-twse daily_valuation 的資料顆粒度一致。
+// 數值來自 oingg-twse，本服務不知道對方 EPS 用的口徑，跟自己算的 EPS/BVPS 不保證一致，不要拿來互相驗證。
+// 欄位對應 src/domains/valuation/marketRatios/types.ts 的 MarketRatiosResult。
+model MarketRatiosResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  peRatio          Decimal? @map("pe_ratio") @db.Decimal(10, 2)
+  pbRatio          Decimal? @map("pb_ratio") @db.Decimal(10, 2)
+  dividendYieldPct Decimal? @map("dividend_yield_pct") @db.Decimal(10, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("market_ratios_result")
 }

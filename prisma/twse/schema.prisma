@@ -1,0 +1,55 @@
+// 本 schema 只用來「讀」oingg-twse 擁有的表格（股價資料）。這些表的定義與 migration 一律由
+// oingg-twse 那個服務負責，這裡永遠不要對它們跑 `prisma migrate`——欄位是用 `prisma db pull`
+// 從既有資料庫內省後，依照本專案的 camelCase + `@map` 命名風格手動整理過。如果 oingg-twse
+// 那邊改了 schema，重新跑一次 `prisma db pull --schema=prisma/twse/schema.prisma` 內省、
+// 再對照調整即可。
+//
+// oingg-twse 這個資料庫實際上有 5 張表（daily_price、daily_valuation、quarterly_balance_sheet、
+// quarterly_income_statement、twse_raw），目前鏡像了 daily_price（股價）跟 daily_valuation
+// （已經算好的 PER/PBR/殖利率，2026-08-19 拍板直接採用這張表現成的數字，不自己用 EPS/BVPS 重算，
+// 見 src/domains/valuation/marketRatios/）。另外兩張跟 oingg-mops-ts 的財報表部分重疊但欄位
+// 不完全一樣，用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/twse-client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("TWSE_DATABASE_URL")
+  directUrl = env("TWSE_DIRECT_URL")
+}
+
+// 每日股價——本服務目前完全沒有市場價格資料，valuation 分類（PER、PBR、市值等）卡的就是這個。
+// 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
+model DailyPrice {
+  symbol      String
+  tradeDate   DateTime @db.Date
+  open        Decimal? @db.Decimal(10, 4)
+  high        Decimal? @db.Decimal(10, 4)
+  low         Decimal? @db.Decimal(10, 4)
+  close       Decimal? @db.Decimal(10, 4)
+  volume      BigInt?
+  turnover    BigInt?
+  transaction BigInt?
+  monthlyAvg  Decimal? @db.Decimal(10, 4)
+
+  @@id([symbol, tradeDate])
+  @@map("daily_price")
+}
+
+// 每日估值比率——oingg-twse 已經算好的 PER/PBR/殖利率，本服務直接採用，不自己重算。
+// 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
+// 注意：EPS 用的是什麼口徑（單季/TTM/年度）不清楚，是外部黑盒數字，跟本服務自己算的 EPS/BVPS
+// 口徑不保證一致，見 src/domains/valuation/marketRatios/ 的說明。
+model DailyValuation {
+  symbol        String
+  tradeDate     DateTime @db.Date
+  peRatio       Decimal? @db.Decimal(10, 2)
+  pbRatio       Decimal? @db.Decimal(10, 2)
+  dividendYield Decimal? @db.Decimal(10, 2)
+
+  @@id([symbol, tradeDate])
+  @@map("daily_valuation")
+}

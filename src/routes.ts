@@ -13,6 +13,8 @@ import deRatioRouter from './domains/solvency/deRatio/route';
 import interestCoverageRouter from './domains/solvency/interestCoverage/route';
 import netDebtToEbitdaRouter from './domains/solvency/netDebtToEbitda/route';
 import turnoverRatioRouter from './domains/turnover/turnoverRatio/route';
+import capexToRevenueRouter from './domains/turnover/capexToRevenue/route';
+import marketRatiosRouter from './domains/valuation/marketRatios/route';
 
 const router = Router();
 
@@ -25,7 +27,8 @@ const apiRouter = Router();
 apiRouter.use('/profitability', roeRouter, roaRouter, bvpsRouter, epsRouter, revenuePerShareRouter, marginsRouter);
 apiRouter.use('/cash-flow', cashFlowPerShareRouter);
 apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter, netDebtToEbitdaRouter);
-apiRouter.use('/turnover', turnoverRatioRouter);
+apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
+apiRouter.use('/valuation', marketRatiosRouter);
 
 router.use('/api', apiRouter);
 

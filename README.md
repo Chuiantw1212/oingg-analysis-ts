@@ -58,13 +58,36 @@ URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 
 - **`DeRatioResult`**（`de_ratio_result`）：`GET /api/solvency/de-ratio` 的持久化結果，欄位對應 `src/domains/solvency/deRatio/types.ts` 的 `DeRatioResult`。純時點快照，只有一個 `deRatioPct` 欄位。
 - **`InterestCoverageResult`**（`interest_coverage_result`）：`GET /api/solvency/interest-coverage` 的持久化結果，欄位對應 `src/domains/solvency/interestCoverage/types.ts` 的 `InterestCoverageResult`。跟 `MarginsResult` 同一種「流量/流量」結構，只有單季/TTM 兩欄位，沒有年化。
 - **`NetDebtToEbitdaResult`**（`net_debt_to_ebitda_result`）：`GET /api/solvency/net-debt-to-ebitda` 的持久化結果，欄位對應 `src/domains/solvency/netDebtToEbitda/types.ts` 的 `NetDebtToEbitdaResult`。第一個要同時查三張財報表（資產負債表+損益表+現金流量表）的指標；淨負債是存量對 EBITDA 流量的比率，只有簡單年化/TTM 兩欄位，沒有原始單季版本。
-- **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/turnover/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產三個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
+- **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/turnover/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產/固定資產四個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
+- **`CapexToRevenueResult`**（`capex_to_revenue_result`）：`GET /api/turnover/capex-to-revenue` 的持久化結果，欄位對應 `src/domains/turnover/capexToRevenue/types.ts` 的 `CapexToRevenueResult`。跟 `MarginsResult` 同一種「流量/流量」結構，只有單季/TTM 兩欄位，沒有年化。
+- **`MarketRatiosResult`**（`market_ratios_result`）：`GET /api/valuation/market-ratios` 的持久化結果，欄位對應 `src/domains/valuation/marketRatios/types.ts` 的 `MarketRatiosResult`。**PK 是 `symbol` + `tradeDate`，不是其他表用的 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`**——這是本服務第一個不跟財務季度掛鉤的持久化結果，因為 PER/PBR 是逐日市場資料，見下方「PER/PBR/股利殖利率計算口徑」。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
 
 ```bash
 pnpm prisma:analysis:migrate   # 產生並套用 migration（不要對 prisma/schema.prisma 那份跑這個）
 pnpm prisma:analysis:studio    # Prisma Studio 開這個 DB
+```
+
+## `prisma/twse/schema.prisma` 是第三個資料庫（唯讀鏡像，跟 `prisma/schema.prisma` 同一種模式）
+
+連到獨立的 Neon 專案 **oingg-twse**（`.env` 的 `TWSE_DATABASE_URL` / `TWSE_DIRECT_URL`），本服務只讀，不擁有這裡的表格 schema/migration——跟主 schema（唯讀鏡像 oingg-mops-ts）是同一種模式，跟自己擁有 schema 的 `prisma/analysis/schema.prisma` 不同。
+
+oingg-twse 這個資料庫實際上有 5 張表，目前鏡像了 2 張：
+
+- **`DailyPrice`**（`daily_price`）：每日開高低收、成交量、成交金額、成交筆數。目前還沒有指標直接用到，是之後做市值/PSR/EV 系列時的備用資料源。
+- **`DailyValuation`**（`daily_valuation`）：已經有算好的 `peRatio`/`pbRatio`/`dividendYield`。2026-08-19 拍板：`valuation` 分類的 PER/PBR/股利殖利率**直接採用這張表現成的數字**，不用本服務自己的 EPS/BVPS 重算——見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md) 的權衡說明跟「PER/PBR/股利殖利率計算口徑」。
+
+其他 2 張表先不鏡像，還沒決定要不要用：
+
+- **`quarterly_balance_sheet`** / **`quarterly_income_statement`**：跟 oingg-mops-ts 的財報表部分重疊但欄位不完全一樣（例如這邊直接有 `book_value_per_share`），用途跟資料來源都還不清楚，先不用。
+- **`twse_raw`**：原始資料 JSON payload，不是整理過的結構化資料，用不到。
+
+這個 schema 有自己的 generator output（`generated/twse-client`，已加入 `.gitignore`）。改動/重新內省用：
+
+```bash
+pnpm prisma:twse:pull     # 重新對 oingg-twse 跑 db pull 內省（不要對這份 schema 跑 migrate）
+pnpm prisma:twse:studio   # Prisma Studio 開這個 DB
 ```
 
 ## API 一覽
@@ -85,9 +108,11 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/api/<分類
 | `GET /api/solvency/de-ratio` | 計算單一公司單一季度的負債權益比 |
 | `GET /api/solvency/interest-coverage` | 計算單一公司單一季度的利息保障倍數（單季、TTM 兩種數值） |
 | `GET /api/solvency/net-debt-to-ebitda` | 計算單一公司單一季度的淨負債對 EBITDA 比（簡易年化、TTM 兩種數值） |
-| `GET /api/turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產周轉率（單季、單季年化、TTM 三種數值） |
+| `GET /api/turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產/固定資產周轉率（單季、單季年化、TTM 三種數值） |
+| `GET /api/turnover/capex-to-revenue` | 計算單一公司單一季度的資本支出佔營收比（單季、TTM 兩種數值） |
+| `GET /api/valuation/market-ratios` | 查詢單一公司最新（或指定日期）的 PER、PBR、股利殖利率（直接採用 oingg-twse 現成數字） |
 
-Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
+Query 參數：`GET /api/valuation/market-ratios` 是例外，跟其他 API 不是同一組（見下方「PER/PBR/股利殖利率計算口徑」的說明）。其餘十三支 API 共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 
 ## ROE 計算口徑（未來 session 接手前務必看）
 
@@ -196,15 +221,24 @@ Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年�
 
 ## 周轉率計算口徑
 
-跟 ROE 同一種單季/單季年化/TTM 三欄位結構，但存貨、應收帳款、總資產三個周轉率放同一支 API、同一張表——三個都要查同一張損益表+資產負債表，也共用同一組 TTM 完整性判斷（一季只要營業成本或營收任一為 null，該季就整個視為不齊），拆開只會重複查詢。
+跟 ROE 同一種單季/單季年化/TTM 三欄位結構，但存貨、應收帳款、總資產、固定資產四個周轉率放同一支 API、同一張表——都要查同一張損益表+資產負債表，也共用同一組 TTM 完整性判斷（一季只要營業成本或營收任一為 null，該季就整個視為不齊），拆開只會重複查詢。
 
 - **`inventoryTurnoverQuarterly`（存貨周轉率）**：本季營業成本（`operatingCost`） / 本季期末存貨（`inventory`）。
 - **`receivablesTurnoverQuarterly`（應收帳款周轉率）**：本季營收（`operatingRevenue`） / 本季期末應收帳款（`accountsReceivable`）。
 - **`assetTurnoverQuarterly`（總資產周轉率）**：本季營收 / 本季期末總資產（`totalAssets`）。
+- **`fixedAssetTurnoverQuarterly`（固定資產周轉率）**：本季營收 / 本季期末不動產、廠房及設備（`propertyPlantEquipment`）。
 - 分母都用**期末餘額**，不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。
 - **`*QuarterlyAnnualized`**：對應單季數值簡單 x4。
 - **`*Ttm`**：近四季（含本季）營業成本／營收加總 / 本季期末餘額，近四季資料須完整存在才會計算，否則為 `null`。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：存貨周轉率 1.06 次（TTM 7.06 次）、應收帳款周轉率 2.92 次（TTM 16.53 次）、總資產周轉率 0.14 次（TTM 0.77 次）。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：存貨周轉率 1.06 次（TTM 7.06 次）、應收帳款周轉率 2.92 次（TTM 16.53 次）、總資產周轉率 0.14 次（TTM 0.77 次）、固定資產周轉率 0.30 次（TTM 1.67 次）。
+
+## 資本支出佔營收比計算口徑
+
+跟毛利率/營業利益率/稅後淨利率同一種「流量/流量」結構——只有單季跟 TTM 兩種口徑，沒有年化（不像周轉率是流量對存量）。
+
+- **`capexToRevenueQuarterly`**：|本季資本支出（`capitalExpenditures`）| / 本季營收 x 100。資料庫裡 `capitalExpenditures` 本身是負數（現金流出），計算比率時取絕對值——資本支出佔營收比慣例上是正數百分比，不是負的。
+- **`capexToRevenueTtm`**：近四季（含本季）營收/資本支出各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：資本支出 846,764,746 千元 ÷ 營收 1,270,380,250 千元 = 資本支出佔營收比 66.65%（TTM 47.00%）——資本密集度很高，符合台積電先進製程持續大量投資的財務體質。
 
 ## 毛利率/營業利益率/稅後淨利率計算口徑
 
@@ -216,9 +250,19 @@ Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年�
 - **`*Ttm`**：近四季（含本季）營收/毛利/營業利益/淨利各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`——一季只要任一欄位為 `null`，該季就整個視為不齊，三個比率共用同一組完整性判斷。
 - 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：毛利率 67.72%（TTM 62.21%）、營業利益率 60.34%（TTM 53.62%）、稅後淨利率 55.62%（TTM 47.88%）。
 
+## PER/PBR/股利殖利率計算口徑
+
+**這支 API（`GET /api/valuation/market-ratios`）跟本服務其他所有指標的設計都不一樣，務必先看這段。**
+
+- **不是自己算，是直接讀 oingg-twse 的 `daily_valuation`**：`peRatio`/`pbRatio`/`dividendYieldPct` 三個數值原封不動來自對方算好的結果，本服務沒有用自己的 EPS/BVPS 重新計算。好處是實作快、不用自己踩 EPS 口徑的坑；代價是**不知道對方 EPS 用的是單季、TTM 還是年度口徑**——跟本服務自己算的 EPS（`GET /api/profitability/eps`）、BVPS（`GET /api/profitability/bvps`）口徑不保證一致，不要拿來互相驗證或混用。回應的 `warnings` 固定會提醒這件事。
+- **查詢介面不是季度查詢**：只有 `companyId`（+ 選填 `date`，格式 `YYYY-MM-DD`，不給就抓最新一筆），沒有 `year`/`season`/`dataType`/`subsidiaryCompanyId`。**第一版設計錯誤**：一開始直接套用其他 API 的季度查詢模板，把 PER/PBR 綁在「該季財報報告日當天」的股價上，結果因為 oingg-twse 的市場資料在 2026-08-19 當下只有 3 天（剛開始收集，不是歷史回補），查任何已報過的歷史季度都是 `null`。後來想清楚：PER/PBR 是逐日市場資料，時間刻度跟財務季度不是同一回事，taxonomy 的 `MRQ` 指的是分母用哪一期 EPS，不是分子股價要對應哪一天，才改成現在這個「跟季度脫鉤」的介面。
+- **`date` 的查詢邏輯**：不指定就抓整張 `daily_valuation` 表最新一筆；指定 `date` 則找「該日期或之前」最新一筆交易日資料（指定日期不一定是交易日，例如週末），回應的 `tradeDate` 會標明實際套用的是哪一天。
+- 已用台積電（2330）實測驗證：2026-08-17 資料 PER 27.82、PBR 9.68、殖利率 0.92%；指定 `date=2026-08-20`（週末後）正確找回 8/17 那筆；指定太早的日期（例如 `2026-06-30`，早於資料起始日）正確回傳 `null` 並在 `warnings` 說明原因。
+
 ## 已知缺口 / Backlog
 
-- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率／現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比、周轉率、毛利率／營業利益率／稅後淨利率。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
+- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率／現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比、周轉率（存貨/應收帳款/總資產/固定資產）、資本支出佔營收比、毛利率／營業利益率／稅後淨利率、PER／PBR／股利殖利率（採用 oingg-twse 現成數字，見上方說明）。`solvency` 只剩 Altman Z-Score 等股價、`turnover` 分類已全數完成。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
+- **`daily_price` 已接上但還沒用到**：oingg-twse 的股價資料只鏡像了 `DailyPrice`，之後做市值/PSR/EV_EBITDA 等需要「市值 = 股價 × 流通股數」的指標時會用到，流通股數已經有（`capital_stock_history`）。
 - **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
 - **PER、PBR 等估值指標尚未實作**：卡在還沒有股價資料源，見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md)。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。
