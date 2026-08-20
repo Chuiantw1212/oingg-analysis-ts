@@ -142,3 +142,44 @@ model RevenuePerShareResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("revenue_per_share_result")
 }
+
+// 每股現金流（OCF/FCF）計算結果——單季、單季年化、TTM 都是同一張表的欄位，OCF 跟 FCF 也共用同一張表
+// （不是各自開表），跟 RoeResult / EpsResult 同一種結構。欄位對應
+// src/domains/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
+model CashFlowPerShareResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  ocfPerShareQuarterly           Decimal? @map("ocf_per_share_quarterly") @db.Decimal(14, 4)
+  ocfPerShareQuarterlyAnnualized Decimal? @map("ocf_per_share_quarterly_annualized") @db.Decimal(14, 4)
+  ocfPerShareTtm                 Decimal? @map("ocf_per_share_ttm") @db.Decimal(14, 4)
+
+  // FCF = 營業活動現金流量 + 資本支出（capitalExpenditures 本身是負數，所以是加不是減）。
+  fcfPerShareQuarterly           Decimal? @map("fcf_per_share_quarterly") @db.Decimal(14, 4)
+  fcfPerShareQuarterlyAnnualized Decimal? @map("fcf_per_share_quarterly_annualized") @db.Decimal(14, 4)
+  fcfPerShareTtm                 Decimal? @map("fcf_per_share_ttm") @db.Decimal(14, 4)
+
+  operatingCashFlowValue      BigInt? @map("operating_cash_flow_value") // 本季 netCashFromOperatingActivities
+  // 近四季（含本季）加總；四季資料不齊則為 null。
+  operatingCashFlowTtmValue   BigInt? @map("operating_cash_flow_ttm_value")
+  capitalExpendituresValue    BigInt? @map("capital_expenditures_value") // 本季 capitalExpenditures（負數）
+  capitalExpendituresTtmValue BigInt? @map("capital_expenditures_ttm_value") // 近四季加總（負數），資料不齊則為 null
+
+  paidInShares               BigInt? @map("paid_in_shares")
+  // capital_stock_history 裡實際套用的那筆紀錄生效於何時（西元年月），不是本季的民國年季。
+  capitalStockEffectiveYear  Int?    @map("capital_stock_effective_year")
+  capitalStockEffectiveMonth Int?    @map("capital_stock_effective_month")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("cash_flow_per_share_result")
+}

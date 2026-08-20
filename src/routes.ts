@@ -4,6 +4,7 @@ import roeRouter from './domains/roe/route';
 import bvpsRouter from './domains/bvps/route';
 import epsRouter from './domains/eps/route';
 import revenuePerShareRouter from './domains/revenuePerShare/route';
+import cashFlowPerShareRouter from './domains/cashFlowPerShare/route';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ apiRouter.use(roeRouter);
 apiRouter.use(bvpsRouter);
 apiRouter.use(epsRouter);
 apiRouter.use(revenuePerShareRouter);
+apiRouter.use(cashFlowPerShareRouter);
 
 router.use('/api/ratios', apiRouter);
 

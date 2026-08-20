@@ -43,6 +43,7 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 - **`BvpsResult`**（`bvps_result`）：`GET /api/ratios/bvps` 的持久化結果，欄位對應 `src/domains/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
 - **`EpsResult`**（`eps_result`）：`GET /api/ratios/eps` 的持久化結果，欄位對應 `src/domains/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
 - **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/ratios/revenue-per-share` 的持久化結果，欄位對應 `src/domains/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
+- **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/ratios/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
 
@@ -59,8 +60,9 @@ pnpm prisma:analysis:studio    # Prisma Studio 開這個 DB
 | `GET /api/ratios/bvps` | 計算單一公司單一季度的 BVPS（每股淨值） |
 | `GET /api/ratios/eps` | 計算單一公司單一季度的 EPS（單季、單季年化、TTM 三種數值） |
 | `GET /api/ratios/revenue-per-share` | 計算單一公司單一季度的每股營收（單季、單季年化、TTM 三種數值） |
+| `GET /api/ratios/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
 
-Query 參數（四支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
+Query 參數（五支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 
 ## ROE 計算口徑（未來 session 接手前務必看）
 
@@ -102,9 +104,20 @@ Query 參數（四支 API 共用同一組）：`companyId`、`year`（民國年�
 - 流通股數／單位換算做法跟 BVPS、EPS 完全一樣（查 `capital_stock_history`、金額 x1000 換算成元）。
 - 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季營收 1,270,380,250 千元 → 每股營收 48.99 元、年化 195.96 元；近四季營收加總 7,203,456,280 千元 → TTM 每股營收 277.78 元。
 
+## 每股現金流（OCF/FCF）計算口徑
+
+跟 EPS/每股營收同一種單季/年化/TTM 三欄位結構，但 OCF 跟 FCF 兩個指標放同一支 API、同一張表——因為算 FCF 一定要先有 OCF 跟資本支出，拆成兩支 API 會重複查兩次現金流量表跟股本，沒必要。
+
+- **`ocfPerShareQuarterly`**：本季 `netCashFromOperatingActivities` / 本季報告日對應的流通股數。
+- **`fcfPerShareQuarterly`**：`(本季 netCashFromOperatingActivities + 本季 capitalExpenditures) / 流通股數`——**注意是加不是減**，因為資料庫裡的 `capitalExpenditures` 本身已經是負數（現金流出），例如台積電 115Q2 是 `-846,764,746` 千元。
+- **`*QuarterlyAnnualized`**：對應單季數值簡單 x4。
+- **`*Ttm`**：近四季（含本季）加總 / 流通股數。一季只要 `netCashFromOperatingActivities` 或 `capitalExpenditures` 任一為 `null`，該季就整個視為不齊，OCF 跟 FCF 共用同一組「資料齊不齊」判斷，不分開追蹤兩套缺季清單。
+- 流通股數／單位換算做法跟 BVPS、EPS、每股營收完全一樣。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季 OCF 1,482,341,242 千元、資本支出 -846,764,746 千元 → OCF 每股 57.16 元、FCF 每股 24.51 元；近四季 OCF 加總 6,005,759,970 千元、資本支出加總 -3,385,442,599 千元 → TTM OCF 每股 231.59 元、TTM FCF 每股 101.04 元。
+
 ## 已知缺口 / Backlog
 
-- **只有 ROE、BVPS、EPS、每股營收**：PER、PBR、每股現金流（OCF/FCF per share）等尚未實作。PER/PBR/市值/EV 系列都卡在還沒有股價資料源。
+- **只有 ROE、BVPS、EPS、每股營收、每股現金流**：PER、PBR、ROA、槓桿/流動性/周轉率等尚未實作。PER/PBR/市值/EV 系列都卡在還沒有股價資料源。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。
 - **沒有自動化測試**：跟 oingg-mops-ts 一樣，目前靠實測真實資料驗證，沒有 unit test。
 - **沒有身份驗證**：跟 oingg-mops-ts 的 ingest API 一樣，目前完全開放。
