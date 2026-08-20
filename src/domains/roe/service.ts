@@ -124,8 +124,6 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
         netIncomeValue: netIncome.value,
         equityFieldUsed: equity.field,
         equityValue: equity.value,
-        ttmQuartersUsed: quartersUsed,
-        ttmQuartersMissing: quartersMissing,
         warnings,
       },
       update: {
@@ -137,8 +135,6 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
         netIncomeValue: netIncome.value,
         equityFieldUsed: equity.field,
         equityValue: equity.value,
-        ttmQuartersUsed: quartersUsed,
-        ttmQuartersMissing: quartersMissing,
         warnings,
       },
     });

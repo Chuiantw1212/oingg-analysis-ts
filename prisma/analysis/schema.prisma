@@ -38,13 +38,40 @@ model RoeResult {
   equityFieldUsed    String? @map("equity_field_used")
   equityValue        BigInt? @map("equity_value")
 
-  ttmQuartersUsed    String[] @map("ttm_quarters_used")
-  ttmQuartersMissing String[] @map("ttm_quarters_missing")
-  warnings           String[]
+  warnings String[]
 
   computedAt DateTime @default(now()) @map("computed_at")
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("roe_result")
+}
+
+// BVPS（每股淨值）計算結果——欄位對應 src/domains/bvps/types.ts 的 BvpsResult。
+model BvpsResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  bvps Decimal? @map("bvps") @db.Decimal(14, 4)
+
+  equityFieldUsed String? @map("equity_field_used")
+  equityValue     BigInt? @map("equity_value")
+
+  paidInShares               BigInt? @map("paid_in_shares")
+  // capital_stock_history 裡實際套用的那筆紀錄生效於何時（西元年月），不是本季的民國年季。
+  capitalStockEffectiveYear  Int?    @map("capital_stock_effective_year")
+  capitalStockEffectiveMonth Int?    @map("capital_stock_effective_month")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("bvps_result")
 }
