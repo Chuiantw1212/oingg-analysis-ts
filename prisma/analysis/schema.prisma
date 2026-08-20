@@ -251,10 +251,12 @@ model LiquidityRatioResult {
 
   currentRatioPct Decimal? @map("current_ratio_pct") @db.Decimal(10, 2)
   quickRatioPct   Decimal? @map("quick_ratio_pct") @db.Decimal(10, 2)
+  cashRatioPct    Decimal? @map("cash_ratio_pct") @db.Decimal(10, 2)
 
   currentAssetsValue      BigInt? @map("current_assets_value")
   currentLiabilitiesValue BigInt? @map("current_liabilities_value")
   inventoryValue          BigInt? @map("inventory_value")
+  cashAndEquivalentsValue BigInt? @map("cash_and_equivalents_value")
 
   warnings String[]
 
@@ -305,4 +307,46 @@ model TurnoverRatioResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("turnover_ratio_result")
+}
+
+// 毛利率／營業利益率／稅後淨利率計算結果——三個指標共用同一張表（同一組損益表查詢、同一組 TTM
+// 完整性判斷）。這三個都是「流量/流量」比率，本身不需要年化，只有單季/TTM 兩種口徑（沒有
+// QuarterlyAnnualized，跟 RoeResult 那種流量對存量的結構不同）。
+// 欄位對應 src/domains/profitability/margins/types.ts 的 MarginsResult。
+model MarginsResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  grossMarginQuarterly Decimal? @map("gross_margin_quarterly") @db.Decimal(10, 2)
+  grossMarginTtm       Decimal? @map("gross_margin_ttm") @db.Decimal(10, 2)
+
+  operatingMarginQuarterly Decimal? @map("operating_margin_quarterly") @db.Decimal(10, 2)
+  operatingMarginTtm       Decimal? @map("operating_margin_ttm") @db.Decimal(10, 2)
+
+  netProfitMarginQuarterly Decimal? @map("net_profit_margin_quarterly") @db.Decimal(10, 2)
+  netProfitMarginTtm       Decimal? @map("net_profit_margin_ttm") @db.Decimal(10, 2)
+
+  operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收
+  operatingRevenueTtmValue BigInt? @map("operating_revenue_ttm_value") // 近四季加總；資料不齊則為 null
+  grossProfitValue         BigInt? @map("gross_profit_value")
+  grossProfitTtmValue      BigInt? @map("gross_profit_ttm_value")
+  operatingIncomeValue     BigInt? @map("operating_income_value")
+  operatingIncomeTtmValue  BigInt? @map("operating_income_ttm_value")
+
+  netIncomeFieldUsed String? @map("net_income_field_used") // 本季淨利用的是哪個欄位
+  netIncomeValue     BigInt? @map("net_income_value")
+  netIncomeTtmValue  BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("margins_result")
 }

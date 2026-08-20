@@ -21,6 +21,8 @@ export interface LiquidityRatioResult {
   // 速動比率 = (本季期末流動資產 - 存貨) / 本季期末流動負債 * 100
   // 跟負債比率一樣，這是純資產負債表的時點快照，沒有單季/年化/TTM 的區別。
   quickRatioPct: number | null;
+  // 現金比率 = 本季期末現金及約當現金 / 本季期末流動負債 * 100
+  cashRatioPct: number | null;
 
   currentAssets: {
     value: string | null; // BigInt as string
@@ -29,6 +31,9 @@ export interface LiquidityRatioResult {
     value: string | null; // BigInt as string
   };
   inventory: {
+    value: string | null; // BigInt as string
+  };
+  cashAndEquivalents: {
     value: string | null; // BigInt as string
   };
 

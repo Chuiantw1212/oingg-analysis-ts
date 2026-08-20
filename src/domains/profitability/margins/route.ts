@@ -1,22 +1,26 @@
 import { Router } from 'ultimate-express';
-import { getLiquidityRatio } from './controller';
+import { getMargins } from './controller';
 
 const router = Router();
 
 /**
  * @swagger
- * /api/solvency/liquidity-ratio:
+ * /api/profitability/margins:
  *   get:
- *     summary: 計算單一公司單季流動比率、速動比率與現金比率
+ *     summary: 計算單一公司單季毛利率、營業利益率、稅後淨利率
  *     description: >
- *       直接讀取 oingg-mops-ts 已寫入資料庫的資產負債表資料進行計算，本服務本身不向 MOPS 抓取資料，
+ *       直接讀取 oingg-mops-ts 已寫入資料庫的損益表資料進行計算，本服務本身不向 MOPS 抓取資料，
  *       若資料庫中查無該季資料請先透過 oingg-mops-ts 的 ingest API 抓取。
  *
  *       計算口徑：
- *       - currentRatioPct（流動比率） = 本季期末流動資產（currentAssets） / 本季期末流動負債（currentLiabilities） x 100。
- *       - quickRatioPct（速動比率） = (currentAssets - inventory) / currentLiabilities x 100。
- *       - cashRatioPct（現金比率） = 本季期末現金及約當現金（cashAndEquivalents） / currentLiabilities x 100。
- *       - 純資產負債表的時點快照，不像 ROE/ROA 有單季/年化/TTM 的區別。
+ *       - grossMarginQuarterly（毛利率） = 本季毛利（grossProfit） / 本季營收 x 100。
+ *       - operatingMarginQuarterly（營業利益率） = 本季營業利益（operatingIncome） / 本季營收 x 100。
+ *       - netProfitMarginQuarterly（稅後淨利率） = 本季淨利 / 本季營收 x 100，淨利欄位優先採用「歸屬於母公司」口徑
+ *         （netIncomeAttributableToParent），缺漏時退回用整體數字（netIncome）。
+ *       - 這三個都是「同期流量 / 同期流量」的比率，本身不需要年化（不像 ROE 是流量對存量），所以只有單季跟 TTM
+ *         兩種口徑，沒有簡單 x4 年化的版本。
+ *       - *Ttm：近四季（含本季）營收/毛利/營業利益/淨利各自加總後再算比率，近四季資料須完整存在才會計算，否則為 null——
+ *         一季只要任一欄位為 null，該季就整個視為不齊，三個比率共用同一組完整性判斷。
  *     tags:
  *       - Ratios
  *     parameters:
@@ -63,6 +67,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/liquidity-ratio', getLiquidityRatio);
+router.get('/margins', getMargins);
 
 export default router;

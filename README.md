@@ -50,6 +50,7 @@ URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 
 - **`BvpsResult`**（`bvps_result`）：`GET /api/profitability/bvps` 的持久化結果，欄位對應 `src/domains/profitability/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
 - **`EpsResult`**（`eps_result`）：`GET /api/profitability/eps` 的持久化結果，欄位對應 `src/domains/profitability/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
 - **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/profitability/revenue-per-share` 的持久化結果，欄位對應 `src/domains/profitability/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
+- **`MarginsResult`**（`margins_result`）：`GET /api/profitability/margins` 的持久化結果，欄位對應 `src/domains/profitability/margins/types.ts` 的 `MarginsResult`。毛利率/營業利益率/稅後淨利率三個指標共用同一張表，各自只有單季/TTM 兩欄位（沒有年化版本，見下方「毛利率/營業利益率/稅後淨利率計算口徑」）。
 - **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/cash-flow/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/cashFlow/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
 - **`RoaResult`**（`roa_result`）：`GET /api/profitability/roa` 的持久化結果，欄位對應 `src/domains/profitability/roa/types.ts` 的 `RoaResult`。跟 `RoeResult` 同一種單季/年化/TTM 三欄位結構，分母換成總資產。
 - **`DebtRatioResult`**（`debt_ratio_result`）：`GET /api/solvency/debt-ratio` 的持久化結果，欄位對應 `src/domains/solvency/debtRatio/types.ts` 的 `DebtRatioResult`。純資產負債表時點快照，只有一個 `debtRatioPct` 欄位，沒有單季/年化/TTM 的區別。
@@ -74,6 +75,7 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/api/<分類
 | `GET /api/profitability/bvps` | 計算單一公司單一季度的 BVPS（每股淨值） |
 | `GET /api/profitability/eps` | 計算單一公司單一季度的 EPS（單季、單季年化、TTM 三種數值） |
 | `GET /api/profitability/revenue-per-share` | 計算單一公司單一季度的每股營收（單季、單季年化、TTM 三種數值） |
+| `GET /api/profitability/margins` | 計算單一公司單一季度的毛利率、營業利益率、稅後淨利率（單季、TTM 兩種數值） |
 | `GET /api/cash-flow/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
 | `GET /api/solvency/debt-ratio` | 計算單一公司單一季度的負債比率 |
 | `GET /api/solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率與速動比率 |
@@ -170,9 +172,21 @@ Query 參數（九支 API 共用同一組）：`companyId`、`year`（民國年�
 - **`*Ttm`**：近四季（含本季）營業成本／營收加總 / 本季期末餘額，近四季資料須完整存在才會計算，否則為 `null`。
 - 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：存貨周轉率 1.06 次（TTM 7.06 次）、應收帳款周轉率 2.92 次（TTM 16.53 次）、總資產周轉率 0.14 次（TTM 0.77 次）。
 
+## 毛利率/營業利益率/稅後淨利率計算口徑
+
+跟其他指標最大的差異：這三個都是「同期流量 / 同期流量」的比率（例如本季毛利 / 本季營收），比率本身已經跟期間長度無關，**不需要年化**——不像 ROE 是流量（淨利）對存量（權益），年化才有意義。所以 `margins` 只有 `*Quarterly` 跟 `*Ttm` 兩種口徑，沒有 `*QuarterlyAnnualized`。三個比率放同一支 API、同一張表，理由跟周轉率一樣：都要查同一張損益表，也共用同一組 TTM 完整性判斷。
+
+- **`grossMarginQuarterly`（毛利率）**：本季毛利（`grossProfit`） / 本季營收 x 100。
+- **`operatingMarginQuarterly`（營業利益率）**：本季營業利益（`operatingIncome`） / 本季營收 x 100。
+- **`netProfitMarginQuarterly`（稅後淨利率）**：本季淨利 / 本季營收 x 100，淨利欄位跟 ROE 一樣優先採用「歸屬於母公司」口徑（`netIncomeAttributableToParent`），缺漏時退回 `netIncome`。
+- **`*Ttm`**：近四季（含本季）營收/毛利/營業利益/淨利各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`——一季只要任一欄位為 `null`，該季就整個視為不齊，三個比率共用同一組完整性判斷。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：毛利率 67.72%（TTM 62.21%）、營業利益率 60.34%（TTM 53.62%）、稅後淨利率 55.62%（TTM 47.88%）。
+
 ## 已知缺口 / Backlog
 
-- **只有 ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率、周轉率**：PER、PBR 等尚未實作，卡在還沒有股價資料源。基礎財務指標（`fundamentals/`）到這裡先告一段落，之後要擴充會往 `guru/`（PEGY、Graham Number 等大師公式）或股價資料源方向走。
+- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率、周轉率、毛利率／營業利益率／稅後淨利率。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
+- **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
+- **PER、PBR 等估值指標尚未實作**：卡在還沒有股價資料源，見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md)。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。
 - **沒有自動化測試**：跟 oingg-mops-ts 一樣，目前靠實測真實資料驗證，沒有 unit test。
 - **沒有身份驗證**：跟 oingg-mops-ts 的 ingest API 一樣，目前完全開放。
