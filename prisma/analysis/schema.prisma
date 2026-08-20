@@ -498,3 +498,30 @@ model MarketRatiosResult {
   @@id([symbol, tradeDate])
   @@map("market_ratios_result")
 }
+
+// 葛拉漢數計算結果——本服務第一個複合指標，直接引用 EpsResult 的 TTM EPS 跟 BvpsResult 的 BVPS，
+// 不重複實作查詢邏輯。純時點快照（跟 BVPS 一樣，沒有單季/年化/TTM 的區別，本身已經是用 TTM EPS 算的）。
+// 欄位對應 src/domains/guru/grahamNumber/types.ts 的 GrahamNumberResult。
+model GrahamNumberResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  grahamNumber Decimal? @map("graham_number") @db.Decimal(14, 4)
+
+  // 引用自 eps_result.eps_ttm / bvps_result.bvps，不是這裡自己算的。
+  epsTtmValue Decimal? @map("eps_ttm_value") @db.Decimal(14, 4)
+  bvpsValue   Decimal? @map("bvps_value") @db.Decimal(14, 4)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("graham_number_result")
+}

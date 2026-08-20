@@ -2,9 +2,9 @@
 
 - **scope**：Security
 - **說明**：整合經典大師選股準則、動態成長折現與多因子基本面評分模型。
-- **狀態**：⬜ 全部未實作。
+- **狀態**：部分實作（葛拉漢數，本服務自行歸類的指標，見下方）。
 
-## 為什麼整類都還沒做
+## 為什麼 taxonomy 明列的指標都還沒做
 
 這類指標是組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，帶有特定投資人流派的主觀判斷，跟其他分類「直接從財報算出來的數字」性質不同。多數（`Greenblatt_Magic_Formula`、`Lynch_PEG_Fair_Value`）需要先有 [`../valuation/`](../valuation/README.md) 的股價/市值資料源才能做；`Graham_NCAV`、`Piotroski_F_Score`、`Mohanram_G_Score` 理論上不需要股價（`Graham_NCAV` 例外，公式裡有股數但沒有股價），但都是多變量組合模型，建議等更多基礎指標（尤其是 [`../solvency/`](../solvency/README.md)、[`../turnover/`](../turnover/README.md) 剩下的指標）補齊後再回頭做，減少重複查詢跟邏輯拆分的成本。
 
@@ -19,3 +19,15 @@
 | `Piotroski_F_Score` | 皮爾托斯基分數 | 9 項基本面二元會計訊號加總（0~9） | TTM, FY | 綜合獲利能力、財務槓桿/流動性及營運效率改善之 9 分制質量評分 |
 | `Mohanram_G_Score` | 莫罕拉姆 G 分數 | 8 項基本面成長/研發效率訊號加總（0~8） | TTM, FY | 針對高估值與高成長標的設計的基本面評分，彌補 F-Score 偏重價值股的限制 |
 | `Potential_Payback_Period` | 潛在回本期模型 | `ln(1 + (Stock Price * ln(1 + g)) / EPS_0) / ln(1 + g)` | Forward_3Y, Forward_5Y | 考量獲利複合成長率下，動態推算收回購股成本所需的真實年數 |
+
+## 本服務自行歸類的指標（不在 taxonomy 明列的 code 裡）
+
+| 指標 | 公式 | 狀態 |
+|---|---|---|
+| 葛拉漢數（Graham Number） | `sqrt(22.5 x EPS(TTM) x BVPS)` | ✅ 已實作 — [`grahamNumber/`](grahamNumber/)，`GET /api/guru/graham-number` |
+
+taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。
+
+**本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`../profitability/eps/service.ts`](../profitability/eps/service.ts)）跟 `calculateBvps`（[`../profitability/bvps/service.ts`](../profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `eps_result`/`bvps_result`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
+
+葛拉漢數用 **TTM EPS**（不是單季或簡單年化版本）；EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值）。已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 133.01 x 248.05)` = 葛拉漢數 861.59 元。

@@ -15,6 +15,7 @@ import netDebtToEbitdaRouter from './domains/solvency/netDebtToEbitda/route';
 import turnoverRatioRouter from './domains/turnover/turnoverRatio/route';
 import capexToRevenueRouter from './domains/turnover/capexToRevenue/route';
 import marketRatiosRouter from './domains/valuation/marketRatios/route';
+import grahamNumberRouter from './domains/guru/grahamNumber/route';
 
 const router = Router();
 
@@ -29,6 +30,7 @@ apiRouter.use('/cash-flow', cashFlowPerShareRouter);
 apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter, netDebtToEbitdaRouter);
 apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
 apiRouter.use('/valuation', marketRatiosRouter);
+apiRouter.use('/guru', grahamNumberRouter);
 
 router.use('/api', apiRouter);
 

@@ -42,6 +42,8 @@ URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 
 
 `prisma/schema.prisma` 除了三張季度財報表，還有 oingg-mops-ts 新增的 `CapitalStockHistory`（`capital_stock_history`）——公司每次股本變動（現金增資、盈餘/公積轉增資、合併、減資…）生效當月一筆，是「流通股數/面額」最準確的資料源，查某一季對應的股數要取 `effectiveYear`/`effectiveMonth`（**西元年**，注意跟其他表的民國年 `year` 不是同一套曆法）小於等於目標季度的最新一筆。EPS/每股淨值等需要流通股數的指標都應該查這張表，不要用「股本 ÷ 10」去估——這條路線（原本設計了一張人工維護的面額例外表）已經作廢，因為這張表能直接給出真實歷史數字。
 
+還有 `MonthlyCpi`（`monthly_cpi`）——月 CPI，`year`/`month` 是**西元曆**，資料範圍 1981 年至今。目前只有 [`valuation/`](src/domains/valuation/README.md) 分類的 CAPE 打算用到（通膨調整），但 CAPE 還做不了——不是 CPI 資料不夠，是 `quarterly_income_statement` 本身只有 6 個年度的歷史（民國 110~115），CAPE 需要 10 年份 EPS，見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md) 的說明。
+
 ## `prisma/analysis/schema.prisma` 是本服務自己擁有的第二個資料庫
 
 跟上面「唯讀鏡像」的 `prisma/schema.prisma` 不同，`prisma/analysis/schema.prisma` 連到獨立的 Neon 專案 **oingg-analysis**（`.env` 的 `ANALYSIS_DATABASE_URL` / `ANALYSIS_DIRECT_URL`），本服務自己擁有這裡的 schema/migration，存的是**算完的投資指標結果**（不是原始財報資料）。每個指標各自一張表，因為算法/週期不一樣（ROE 有單季/年化/TTM，之後 Beta 之類可能是半年/一年），不共用一套通用結構。目前只有：
@@ -61,6 +63,7 @@ URL 路徑跟這個分類結構一一對應（`/api/<分類>/<指標>`，例如 
 - **`TurnoverRatioResult`**（`turnover_ratio_result`）：`GET /api/turnover/turnover-ratio` 的持久化結果，欄位對應 `src/domains/turnover/turnoverRatio/types.ts` 的 `TurnoverRatioResult`。存貨/應收帳款/總資產/固定資產四個周轉率共用同一張表，各自都有單季/年化/TTM 三欄位。
 - **`CapexToRevenueResult`**（`capex_to_revenue_result`）：`GET /api/turnover/capex-to-revenue` 的持久化結果，欄位對應 `src/domains/turnover/capexToRevenue/types.ts` 的 `CapexToRevenueResult`。跟 `MarginsResult` 同一種「流量/流量」結構，只有單季/TTM 兩欄位，沒有年化。
 - **`MarketRatiosResult`**（`market_ratios_result`）：`GET /api/valuation/market-ratios` 的持久化結果，欄位對應 `src/domains/valuation/marketRatios/types.ts` 的 `MarketRatiosResult`。**PK 是 `symbol` + `tradeDate`，不是其他表用的 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`**——這是本服務第一個不跟財務季度掛鉤的持久化結果，因為 PER/PBR 是逐日市場資料，見下方「PER/PBR/股利殖利率計算口徑」。
+- **`GrahamNumberResult`**（`graham_number_result`）：`GET /api/guru/graham-number` 的持久化結果，欄位對應 `src/domains/guru/grahamNumber/types.ts` 的 `GrahamNumberResult`。本服務第一個複合指標，直接引用 `eps_result`/`bvps_result` 已經算好的 `epsTtm`/`bvps`，不重複查資料庫。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
 
@@ -111,8 +114,9 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/api/<分類
 | `GET /api/turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產/固定資產周轉率（單季、單季年化、TTM 三種數值） |
 | `GET /api/turnover/capex-to-revenue` | 計算單一公司單一季度的資本支出佔營收比（單季、TTM 兩種數值） |
 | `GET /api/valuation/market-ratios` | 查詢單一公司最新（或指定日期）的 PER、PBR、股利殖利率（直接採用 oingg-twse 現成數字） |
+| `GET /api/guru/graham-number` | 計算單一公司單一季度的葛拉漢數（`sqrt(22.5 x EPS(TTM) x BVPS)`） |
 
-Query 參數：`GET /api/valuation/market-ratios` 是例外，跟其他 API 不是同一組（見下方「PER/PBR/股利殖利率計算口徑」的說明）。其餘十三支 API 共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
+Query 參數：`GET /api/valuation/market-ratios` 是例外，跟其他 API 不是同一組（見下方「PER/PBR/股利殖利率計算口徑」的說明）。其餘十四支 API 共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 
 ## ROE 計算口徑（未來 session 接手前務必看）
 
@@ -259,9 +263,19 @@ Query 參數：`GET /api/valuation/market-ratios` 是例外，跟其他 API 不�
 - **`date` 的查詢邏輯**：不指定就抓整張 `daily_valuation` 表最新一筆；指定 `date` 則找「該日期或之前」最新一筆交易日資料（指定日期不一定是交易日，例如週末），回應的 `tradeDate` 會標明實際套用的是哪一天。
 - 已用台積電（2330）實測驗證：2026-08-17 資料 PER 27.82、PBR 9.68、殖利率 0.92%；指定 `date=2026-08-20`（週末後）正確找回 8/17 那筆；指定太早的日期（例如 `2026-06-30`，早於資料起始日）正確回傳 `null` 並在 `warnings` 說明原因。
 
+## 葛拉漢數計算口徑
+
+**本服務第一個複合指標**：`GET /api/guru/graham-number` 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`src/domains/profitability/eps/service.ts`](src/domains/profitability/eps/service.ts)）跟 `calculateBvps`（[`src/domains/profitability/bvps/service.ts`](src/domains/profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `eps_result`/`bvps_result`，這是預期行為，不是意外。之後其他複合指標都應該照這個模式，直接引用既有服務，不要重新查資料庫。
+
+- **公式**：`葛拉漢數 = sqrt(22.5 x EPS(TTM) x BVPS)`。出處：葛拉漢認為本益比不超過 15 倍、股價淨值比不超過 1.5 倍的股票才算便宜，兩者乘積上限 15 x 1.5 = 22.5，推導出合理價上限。
+- **EPS 用 TTM**（近四季滾動），不是單季或簡單年化版本。
+- EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值），會在 `warnings` 註明。
+- 這跟 taxonomy 的 `Graham_NCAV`（葛拉漢淨流動資產價值）是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，是本服務自行歸類進 `guru` 分類的指標。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 133.01 x 248.05)` = 葛拉漢數 861.59 元。
+
 ## 已知缺口 / Backlog
 
-- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率／現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比、周轉率（存貨/應收帳款/總資產/固定資產）、資本支出佔營收比、毛利率／營業利益率／稅後淨利率、PER／PBR／股利殖利率（採用 oingg-twse 現成數字，見上方說明）。`solvency` 只剩 Altman Z-Score 等股價、`turnover` 分類已全數完成。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
+- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率／現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比、周轉率（存貨/應收帳款/總資產/固定資產）、資本支出佔營收比、毛利率／營業利益率／稅後淨利率、PER／PBR／股利殖利率（採用 oingg-twse 現成數字，見上方說明）、葛拉漢數（本服務第一個複合指標）。`solvency` 只剩 Altman Z-Score 等股價、`turnover` 分類已全數完成。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
 - **`daily_price` 已接上但還沒用到**：oingg-twse 的股價資料只鏡像了 `DailyPrice`，之後做市值/PSR/EV_EBITDA 等需要「市值 = 股價 × 流通股數」的指標時會用到，流通股數已經有（`capital_stock_history`）。
 - **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
 - **PER、PBR 等估值指標尚未實作**：卡在還沒有股價資料源，見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md)。

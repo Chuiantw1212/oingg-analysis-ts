@@ -191,3 +191,19 @@ model CapitalStockHistory {
   @@id([symbol, effectiveYear, effectiveMonth])
   @@map("capital_stock_history")
 }
+
+// 月 CPI（消費者物價指數）——用來把不同年度的名目數字換算成同一基準的實質數字（例如 CAPE 需要的
+// 「十年平均實質 EPS」）。year/month 都是西元曆（不是民國年），資料範圍很長（1981 年至今），
+// 但這不是 CAPE 卡住的地方——卡住的是財報資料本身：quarterly_income_statement 目前只有
+// 民國 110~115 年（6 年），CAPE 需要 10 年份 EPS，還差 4 年，得等資料庫累積更多年份才能做。
+model MonthlyCpi {
+  year       Int
+  month      Int
+  indexValue Decimal @map("index_value") @db.Decimal(8, 4)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@id([year, month])
+  @@map("monthly_cpi")
+}
