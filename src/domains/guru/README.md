@@ -6,7 +6,7 @@
 
 ## 為什麼整類都還沒做
 
-這類指標是組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，帶有特定投資人流派的主觀判斷，跟其他分類「直接從財報算出來的數字」性質不同。多數（`Greenblatt_Magic_Formula`、`Lynch_PEG_Fair_Value`）需要先有 [`../valuationAndPricing/`](../valuationAndPricing/README.md) 的股價/市值資料源才能做；`Graham_NCAV`、`Piotroski_F_Score`、`Mohanram_G_Score` 理論上不需要股價（`Graham_NCAV` 例外，公式裡有股數但沒有股價），但都是多變量組合模型，建議等更多基礎指標（尤其是 [`../solvencyAndFinancialHealth/`](../solvencyAndFinancialHealth/README.md)、[`../operatingEfficiencyAndTurnover/`](../operatingEfficiencyAndTurnover/README.md) 剩下的指標）補齊後再回頭做，減少重複查詢跟邏輯拆分的成本。
+這類指標是組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，帶有特定投資人流派的主觀判斷，跟其他分類「直接從財報算出來的數字」性質不同。多數（`Greenblatt_Magic_Formula`、`Lynch_PEG_Fair_Value`）需要先有 [`../valuation/`](../valuation/README.md) 的股價/市值資料源才能做；`Graham_NCAV`、`Piotroski_F_Score`、`Mohanram_G_Score` 理論上不需要股價（`Graham_NCAV` 例外，公式裡有股數但沒有股價），但都是多變量組合模型，建議等更多基礎指標（尤其是 [`../solvency/`](../solvency/README.md)、[`../turnover/`](../turnover/README.md) 剩下的指標）補齊後再回頭做，減少重複查詢跟邏輯拆分的成本。
 
 ## 指標清單
 

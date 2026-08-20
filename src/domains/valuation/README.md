@@ -8,7 +8,7 @@
 
 這一類每個指標都需要**股價**（或市值），而本服務目前完全沒有股價資料源——oingg-mops-ts 提供的只有季度財報（損益表、資產負債表、現金流量表）跟股本歷史，都是基本面資料，不含任何市場交易價格。要做這一類，第一件事是決定股價資料要從哪抓（另外接 API、還是請 oingg-mops-ts 增加 ingest），這是比單一指標實作更大的決定，尚未拍板。
 
-不過分母端很多已經現成：`Book Value Per Share`（[`../profitabilityAndCapitalAllocation/bvps/`](../profitabilityAndCapitalAllocation/bvps/)）、`EPS`（[`../profitabilityAndCapitalAllocation/eps/`](../profitabilityAndCapitalAllocation/eps/)）、`Free Cash Flow Per Share`（[`../cashFlowAndEarningsQuality/cashFlowPerShare/`](../cashFlowAndEarningsQuality/cashFlowPerShare/)）都已經有了，股價一旦有資料源，這幾個指標可以很快接上。
+不過分母端很多已經現成：`Book Value Per Share`（[`../profitability/bvps/`](../profitability/bvps/)）、`EPS`（[`../profitability/eps/`](../profitability/eps/)）、`Free Cash Flow Per Share`（[`../cashFlow/cashFlowPerShare/`](../cashFlow/cashFlowPerShare/)）都已經有了，股價一旦有資料源，這幾個指標可以很快接上。
 
 ## 指標清單
 

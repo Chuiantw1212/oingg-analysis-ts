@@ -19,7 +19,7 @@ datasource db {
   directUrl = env("ANALYSIS_DIRECT_URL")
 }
 
-// ROE 計算結果——欄位對應 src/domains/profitabilityAndCapitalAllocation/roe/types.ts 的 RoeResult。
+// ROE 計算結果——欄位對應 src/domains/profitability/roe/types.ts 的 RoeResult。
 model RoeResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -47,7 +47,7 @@ model RoeResult {
   @@map("roe_result")
 }
 
-// BVPS（每股淨值）計算結果——欄位對應 src/domains/profitabilityAndCapitalAllocation/bvps/types.ts 的 BvpsResult。
+// BVPS（每股淨值）計算結果——欄位對應 src/domains/profitability/bvps/types.ts 的 BvpsResult。
 model BvpsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -77,7 +77,7 @@ model BvpsResult {
 }
 
 // EPS（每股盈餘）計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult 同一種結構），
-// 不是各自開表。欄位對應 src/domains/profitabilityAndCapitalAllocation/eps/types.ts 的 EpsResult。
+// 不是各自開表。欄位對應 src/domains/profitability/eps/types.ts 的 EpsResult。
 model EpsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -111,7 +111,7 @@ model EpsResult {
 }
 
 // 每股營收計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult / EpsResult 同一種結構）。
-// 欄位對應 src/domains/profitabilityAndCapitalAllocation/revenuePerShare/types.ts 的 RevenuePerShareResult。
+// 欄位對應 src/domains/profitability/revenuePerShare/types.ts 的 RevenuePerShareResult。
 model RevenuePerShareResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -145,7 +145,7 @@ model RevenuePerShareResult {
 
 // 每股現金流（OCF/FCF）計算結果——單季、單季年化、TTM 都是同一張表的欄位，OCF 跟 FCF 也共用同一張表
 // （不是各自開表），跟 RoeResult / EpsResult 同一種結構。欄位對應
-// src/domains/cashFlowAndEarningsQuality/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
+// src/domains/cashFlow/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
 model CashFlowPerShareResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -185,7 +185,7 @@ model CashFlowPerShareResult {
 }
 
 // ROA 計算結果——結構跟 RoeResult 一致（單季/年化/TTM 三欄位），分母換成總資產。
-// 欄位對應 src/domains/profitabilityAndCapitalAllocation/roa/types.ts 的 RoaResult。
+// 欄位對應 src/domains/profitability/roa/types.ts 的 RoaResult。
 model RoaResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -213,7 +213,7 @@ model RoaResult {
 }
 
 // 負債比率計算結果——純資產負債表的時點快照，沒有單季/年化/TTM 的區別（不像 RoeResult/RoaResult）。
-// 欄位對應 src/domains/solvencyAndFinancialHealth/debtRatio/types.ts 的 DebtRatioResult。
+// 欄位對應 src/domains/solvency/debtRatio/types.ts 的 DebtRatioResult。
 model DebtRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -239,7 +239,7 @@ model DebtRatioResult {
 
 // 流動比率／速動比率計算結果——兩個指標共用同一張表（跟 CashFlowPerShareResult 的 OCF/FCF 一樣的理由：
 // 速動比率一定要先有流動資產/流動負債，拆兩支 API 只會重複查同一張資產負債表）。純時點快照，
-// 沒有單季/年化/TTM 的區別。欄位對應 src/domains/solvencyAndFinancialHealth/liquidityRatio/types.ts 的 LiquidityRatioResult。
+// 沒有單季/年化/TTM 的區別。欄位對應 src/domains/solvency/liquidityRatio/types.ts 的 LiquidityRatioResult。
 model LiquidityRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -267,7 +267,7 @@ model LiquidityRatioResult {
 
 // 存貨／應收帳款／總資產周轉率計算結果——三個指標共用同一張表（同一組損益表+資產負債表查詢、
 // 同一組 TTM 完整性判斷），各自都有單季/年化/TTM 三欄位，跟 RoeResult 同一種結構。
-// 欄位對應 src/domains/operatingEfficiencyAndTurnover/turnoverRatio/types.ts 的 TurnoverRatioResult。
+// 欄位對應 src/domains/turnover/turnoverRatio/types.ts 的 TurnoverRatioResult。
 model TurnoverRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年

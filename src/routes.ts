@@ -1,14 +1,14 @@
 import { Router } from 'ultimate-express';
 import rootRouter from './domains/system/root';
-import roeRouter from './domains/profitabilityAndCapitalAllocation/roe/route';
-import roaRouter from './domains/profitabilityAndCapitalAllocation/roa/route';
-import bvpsRouter from './domains/profitabilityAndCapitalAllocation/bvps/route';
-import epsRouter from './domains/profitabilityAndCapitalAllocation/eps/route';
-import revenuePerShareRouter from './domains/profitabilityAndCapitalAllocation/revenuePerShare/route';
-import cashFlowPerShareRouter from './domains/cashFlowAndEarningsQuality/cashFlowPerShare/route';
-import debtRatioRouter from './domains/solvencyAndFinancialHealth/debtRatio/route';
-import liquidityRatioRouter from './domains/solvencyAndFinancialHealth/liquidityRatio/route';
-import turnoverRatioRouter from './domains/operatingEfficiencyAndTurnover/turnoverRatio/route';
+import roeRouter from './domains/profitability/roe/route';
+import roaRouter from './domains/profitability/roa/route';
+import bvpsRouter from './domains/profitability/bvps/route';
+import epsRouter from './domains/profitability/eps/route';
+import revenuePerShareRouter from './domains/profitability/revenuePerShare/route';
+import cashFlowPerShareRouter from './domains/cashFlow/cashFlowPerShare/route';
+import debtRatioRouter from './domains/solvency/debtRatio/route';
+import liquidityRatioRouter from './domains/solvency/liquidityRatio/route';
+import turnoverRatioRouter from './domains/turnover/turnoverRatio/route';
 
 const router = Router();
 
