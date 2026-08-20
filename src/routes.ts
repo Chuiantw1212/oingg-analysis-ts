@@ -1,10 +1,10 @@
 import { Router } from 'ultimate-express';
 import rootRouter from './domains/system/root';
-import roeRouter from './domains/roe/route';
-import bvpsRouter from './domains/bvps/route';
-import epsRouter from './domains/eps/route';
-import revenuePerShareRouter from './domains/revenuePerShare/route';
-import cashFlowPerShareRouter from './domains/cashFlowPerShare/route';
+import roeRouter from './domains/fundamentals/roe/route';
+import bvpsRouter from './domains/fundamentals/bvps/route';
+import epsRouter from './domains/fundamentals/eps/route';
+import revenuePerShareRouter from './domains/fundamentals/revenuePerShare/route';
+import cashFlowPerShareRouter from './domains/fundamentals/cashFlowPerShare/route';
 
 const router = Router();
 

@@ -23,7 +23,14 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 
 ## 架構
 
-跟 oingg-mops-ts 同一套 `src/shared`、`src/adapters`、`src/domains` 慣例，但因為本服務不做 ingest，`domains/roe/` 只有 `types.ts` / `service.ts`（DB 查詢 + 計算）/ `controller.ts` / `route.ts`，沒有 `parser.ts` / `ingest.ts`。
+跟 oingg-mops-ts 同一套 `src/shared`、`src/adapters`、`src/domains` 慣例，但因為本服務不做 ingest，每個指標的 domain 只有 `types.ts` / `service.ts`（DB 查詢 + 計算）/ `controller.ts` / `route.ts`，沒有 `parser.ts` / `ingest.ts`。
+
+`src/domains` 底下依指標性質分兩層：
+
+- **`domains/fundamentals/`**：直接從財報三表（+ 股本歷史）算出來的基礎指標——`roe`、`bvps`、`eps`、`revenuePerShare`、`cashFlowPerShare`。每個都是「單一計算方式，頂多拆單季/年化/TTM 三個口徑」，不摻額外假設。
+- **`domains/guru/`**：組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，例如 PEGY（Peter Lynch）、Graham Number、Piotroski F-Score、Magic Formula（Greenblatt）——這類指標帶有主觀假設或特定投資人流派的判斷，跟 `fundamentals` 那種「直接算出來的數字」性質不同，所以分開放。目前這層還沒有任何指標，資料夾要等第一個大師指標實作時才會建立。
+
+這個分層只影響 `src/domains` 底下的資料夾結構，**API 路徑不變**——`/api/ratios/eps`、`/api/ratios/bvps` 等既有 endpoint 照舊，之後 guru 指標也會掛在同一個扁平的 `/api/ratios/*` 底下（例如 `/api/ratios/pegy`），不會因為程式碼分層多一層路徑。
 
 `src/shared/rocQuarter.ts` 是從 oingg-mops-ts 同名檔案複製、只保留 `getPastNQuarters` 的精簡版（本服務不判斷「最新應公告季度」，也不需要 `getQuarterEndDate`）。
 
@@ -39,11 +46,11 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 
 跟上面「唯讀鏡像」的 `prisma/schema.prisma` 不同，`prisma/analysis/schema.prisma` 連到獨立的 Neon 專案 **oingg-analysis**（`.env` 的 `ANALYSIS_DATABASE_URL` / `ANALYSIS_DIRECT_URL`），本服務自己擁有這裡的 schema/migration，存的是**算完的投資指標結果**（不是原始財報資料）。每個指標各自一張表，因為算法/週期不一樣（ROE 有單季/年化/TTM，之後 Beta 之類可能是半年/一年），不共用一套通用結構。目前只有：
 
-- **`RoeResult`**（`roe_result`）：`GET /api/ratios/roe` 每次算完會 upsert 一筆進去（依 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`），欄位對應 `src/domains/roe/types.ts` 的 `RoeResult`。寫入失敗只會記 log，不會讓 API 回傳失敗——存檔是附加行為，不是這支 API 的主要契約。
-- **`BvpsResult`**（`bvps_result`）：`GET /api/ratios/bvps` 的持久化結果，欄位對應 `src/domains/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
-- **`EpsResult`**（`eps_result`）：`GET /api/ratios/eps` 的持久化結果，欄位對應 `src/domains/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
-- **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/ratios/revenue-per-share` 的持久化結果，欄位對應 `src/domains/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
-- **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/ratios/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
+- **`RoeResult`**（`roe_result`）：`GET /api/ratios/roe` 每次算完會 upsert 一筆進去（依 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`），欄位對應 `src/domains/fundamentals/roe/types.ts` 的 `RoeResult`。寫入失敗只會記 log，不會讓 API 回傳失敗——存檔是附加行為，不是這支 API 的主要契約。
+- **`BvpsResult`**（`bvps_result`）：`GET /api/ratios/bvps` 的持久化結果，欄位對應 `src/domains/fundamentals/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
+- **`EpsResult`**（`eps_result`）：`GET /api/ratios/eps` 的持久化結果，欄位對應 `src/domains/fundamentals/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
+- **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/ratios/revenue-per-share` 的持久化結果，欄位對應 `src/domains/fundamentals/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
+- **`CashFlowPerShareResult`**（`cash_flow_per_share_result`）：`GET /api/ratios/cash-flow-per-share` 的持久化結果，欄位對應 `src/domains/fundamentals/cashFlowPerShare/types.ts` 的 `CashFlowPerShareResult`。OCF 跟 FCF 兩個指標共用同一張表，各自都有單季/年化/TTM 三欄位。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
 
