@@ -19,7 +19,7 @@ datasource db {
   directUrl = env("ANALYSIS_DIRECT_URL")
 }
 
-// ROE 計算結果——欄位對應 src/domains/roe/types.ts 的 RoeResult。
+// ROE 計算結果——欄位對應 src/domains/profitabilityAndCapitalAllocation/roe/types.ts 的 RoeResult。
 model RoeResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -47,7 +47,7 @@ model RoeResult {
   @@map("roe_result")
 }
 
-// BVPS（每股淨值）計算結果——欄位對應 src/domains/bvps/types.ts 的 BvpsResult。
+// BVPS（每股淨值）計算結果——欄位對應 src/domains/profitabilityAndCapitalAllocation/bvps/types.ts 的 BvpsResult。
 model BvpsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -77,7 +77,7 @@ model BvpsResult {
 }
 
 // EPS（每股盈餘）計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult 同一種結構），
-// 不是各自開表。欄位對應 src/domains/eps/types.ts 的 EpsResult。
+// 不是各自開表。欄位對應 src/domains/profitabilityAndCapitalAllocation/eps/types.ts 的 EpsResult。
 model EpsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -111,7 +111,7 @@ model EpsResult {
 }
 
 // 每股營收計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult / EpsResult 同一種結構）。
-// 欄位對應 src/domains/revenuePerShare/types.ts 的 RevenuePerShareResult。
+// 欄位對應 src/domains/profitabilityAndCapitalAllocation/revenuePerShare/types.ts 的 RevenuePerShareResult。
 model RevenuePerShareResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -145,7 +145,7 @@ model RevenuePerShareResult {
 
 // 每股現金流（OCF/FCF）計算結果——單季、單季年化、TTM 都是同一張表的欄位，OCF 跟 FCF 也共用同一張表
 // （不是各自開表），跟 RoeResult / EpsResult 同一種結構。欄位對應
-// src/domains/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
+// src/domains/cashFlowAndEarningsQuality/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
 model CashFlowPerShareResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -182,4 +182,127 @@ model CashFlowPerShareResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("cash_flow_per_share_result")
+}
+
+// ROA 計算結果——結構跟 RoeResult 一致（單季/年化/TTM 三欄位），分母換成總資產。
+// 欄位對應 src/domains/profitabilityAndCapitalAllocation/roa/types.ts 的 RoaResult。
+model RoaResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  roaQuarterlyPct           Decimal? @map("roa_quarterly_pct") @db.Decimal(10, 2)
+  roaQuarterlyAnnualizedPct Decimal? @map("roa_quarterly_annualized_pct") @db.Decimal(10, 2)
+  roaTtmPct                 Decimal? @map("roa_ttm_pct") @db.Decimal(10, 2)
+
+  netIncomeFieldUsed String? @map("net_income_field_used")
+  netIncomeValue     BigInt? @map("net_income_value")
+  totalAssetsValue   BigInt? @map("total_assets_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("roa_result")
+}
+
+// 負債比率計算結果——純資產負債表的時點快照，沒有單季/年化/TTM 的區別（不像 RoeResult/RoaResult）。
+// 欄位對應 src/domains/solvencyAndFinancialHealth/debtRatio/types.ts 的 DebtRatioResult。
+model DebtRatioResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  debtRatioPct Decimal? @map("debt_ratio_pct") @db.Decimal(10, 2)
+
+  totalLiabilitiesValue BigInt? @map("total_liabilities_value")
+  totalAssetsValue      BigInt? @map("total_assets_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("debt_ratio_result")
+}
+
+// 流動比率／速動比率計算結果——兩個指標共用同一張表（跟 CashFlowPerShareResult 的 OCF/FCF 一樣的理由：
+// 速動比率一定要先有流動資產/流動負債，拆兩支 API 只會重複查同一張資產負債表）。純時點快照，
+// 沒有單季/年化/TTM 的區別。欄位對應 src/domains/solvencyAndFinancialHealth/liquidityRatio/types.ts 的 LiquidityRatioResult。
+model LiquidityRatioResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  currentRatioPct Decimal? @map("current_ratio_pct") @db.Decimal(10, 2)
+  quickRatioPct   Decimal? @map("quick_ratio_pct") @db.Decimal(10, 2)
+
+  currentAssetsValue      BigInt? @map("current_assets_value")
+  currentLiabilitiesValue BigInt? @map("current_liabilities_value")
+  inventoryValue          BigInt? @map("inventory_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("liquidity_ratio_result")
+}
+
+// 存貨／應收帳款／總資產周轉率計算結果——三個指標共用同一張表（同一組損益表+資產負債表查詢、
+// 同一組 TTM 完整性判斷），各自都有單季/年化/TTM 三欄位，跟 RoeResult 同一種結構。
+// 欄位對應 src/domains/operatingEfficiencyAndTurnover/turnoverRatio/types.ts 的 TurnoverRatioResult。
+model TurnoverRatioResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  inventoryTurnoverQuarterly           Decimal? @map("inventory_turnover_quarterly") @db.Decimal(14, 4)
+  inventoryTurnoverQuarterlyAnnualized Decimal? @map("inventory_turnover_quarterly_annualized") @db.Decimal(14, 4)
+  inventoryTurnoverTtm                 Decimal? @map("inventory_turnover_ttm") @db.Decimal(14, 4)
+
+  receivablesTurnoverQuarterly           Decimal? @map("receivables_turnover_quarterly") @db.Decimal(14, 4)
+  receivablesTurnoverQuarterlyAnnualized Decimal? @map("receivables_turnover_quarterly_annualized") @db.Decimal(14, 4)
+  receivablesTurnoverTtm                 Decimal? @map("receivables_turnover_ttm") @db.Decimal(14, 4)
+
+  assetTurnoverQuarterly           Decimal? @map("asset_turnover_quarterly") @db.Decimal(14, 4)
+  assetTurnoverQuarterlyAnnualized Decimal? @map("asset_turnover_quarterly_annualized") @db.Decimal(14, 4)
+  assetTurnoverTtm                 Decimal? @map("asset_turnover_ttm") @db.Decimal(14, 4)
+
+  operatingCostValue       BigInt? @map("operating_cost_value") // 本季營業成本
+  operatingCostTtmValue    BigInt? @map("operating_cost_ttm_value") // 近四季加總；資料不齊則為 null
+  operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收
+  operatingRevenueTtmValue BigInt? @map("operating_revenue_ttm_value") // 近四季加總；資料不齊則為 null
+
+  inventoryValue          BigInt? @map("inventory_value") // 本季期末存貨
+  accountsReceivableValue BigInt? @map("accounts_receivable_value") // 本季期末應收帳款
+  totalAssetsValue        BigInt? @map("total_assets_value") // 本季期末總資產
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("turnover_ratio_result")
 }
