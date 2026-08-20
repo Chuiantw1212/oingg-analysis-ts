@@ -42,6 +42,7 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 - **`RoeResult`**（`roe_result`）：`GET /api/ratios/roe` 每次算完會 upsert 一筆進去（依 `symbol` + `year` + `season` + `dataType` + `subsidiaryCompanyId`），欄位對應 `src/domains/roe/types.ts` 的 `RoeResult`。寫入失敗只會記 log，不會讓 API 回傳失敗——存檔是附加行為，不是這支 API 的主要契約。
 - **`BvpsResult`**（`bvps_result`）：`GET /api/ratios/bvps` 的持久化結果，欄位對應 `src/domains/bvps/types.ts` 的 `BvpsResult`。同樣是 upsert、寫入失敗不影響回傳。
 - **`EpsResult`**（`eps_result`）：`GET /api/ratios/eps` 的持久化結果，欄位對應 `src/domains/eps/types.ts` 的 `EpsResult`。單季、單季年化、TTM 三個 EPS 數值都是這張表的欄位（`epsQuarterly` / `epsQuarterlyAnnualized` / `epsTtm`），不是各自開表——跟 `RoeResult` 同一種結構。同樣是 upsert、寫入失敗不影響回傳。
+- **`RevenuePerShareResult`**（`revenue_per_share_result`）：`GET /api/ratios/revenue-per-share` 的持久化結果，欄位對應 `src/domains/revenuePerShare/types.ts` 的 `RevenuePerShareResult`。跟 `EpsResult` 同一種單季/年化/TTM 三欄位結構。
 
 這個 schema 有自己的 generator output（`generated/analysis-client`，已加入 `.gitignore`，`postinstall` 會一併產生），跟主 schema 的 `@prisma/client` 不會互相覆蓋。改動這裡的 model 用：
 
@@ -57,8 +58,9 @@ pnpm prisma:analysis:studio    # Prisma Studio 開這個 DB
 | `GET /api/ratios/roe` | 計算單一公司單一季度的 ROE（單季、單季年化、TTM 三種數值） |
 | `GET /api/ratios/bvps` | 計算單一公司單一季度的 BVPS（每股淨值） |
 | `GET /api/ratios/eps` | 計算單一公司單一季度的 EPS（單季、單季年化、TTM 三種數值） |
+| `GET /api/ratios/revenue-per-share` | 計算單一公司單一季度的每股營收（單季、單季年化、TTM 三種數值） |
 
-Query 參數（三支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
+Query 參數（四支 API 共用同一組）：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 
 ## ROE 計算口徑（未來 session 接手前務必看）
 
@@ -90,9 +92,19 @@ Query 參數（三支 API 共用同一組）：`companyId`、`year`（民國年�
 - **流通股數／單位換算**：跟 BVPS 完全一樣的做法——查 `capital_stock_history` 抓報告日當時生效的股數，金額欄位（千元）要先 x1000 換算成元再除。
 - 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季淨利 706,561,938 千元 → epsQuarterly 27.25 元、epsQuarterlyAnnualized 109 元；近四季（114Q3~115Q2）淨利加總 3,449,225,724 千元 → epsTtm 133.01 元。TTM 高於單季年化是因為本季淨利比前三季平均低，兩個數字本來就會分歧，不是計算錯誤。
 
+## 每股營收計算口徑
+
+跟 EPS 同一種單季/單季年化/TTM 三欄位結構，計算方式也完全一樣，只是分子換成 `operatingRevenue`（營收沒有「歸屬於母公司」的口徑選擇問題，單一欄位）。
+
+- **`revenuePerShareQuarterly`**：本季營收 / 本季報告日對應的流通股數。
+- **`revenuePerShareQuarterlyAnnualized`**：`revenuePerShareQuarterly` 簡單 x4。
+- **`revenuePerShareTtm`**：近四季（含本季）營收加總 / 本季報告日對應的流通股數，近四季資料須完整存在才會計算，否則為 `null`。
+- 流通股數／單位換算做法跟 BVPS、EPS 完全一樣（查 `capital_stock_history`、金額 x1000 換算成元）。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季營收 1,270,380,250 千元 → 每股營收 48.99 元、年化 195.96 元；近四季營收加總 7,203,456,280 千元 → TTM 每股營收 277.78 元。
+
 ## 已知缺口 / Backlog
 
-- **只有 ROE、BVPS、EPS**：PER、PBR、每股營收、每股現金流等尚未實作。PER/PBR/市值/EV 系列都卡在還沒有股價資料源。
+- **只有 ROE、BVPS、EPS、每股營收**：PER、PBR、每股現金流（OCF/FCF per share）等尚未實作。PER/PBR/市值/EV 系列都卡在還沒有股價資料源。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。
 - **沒有自動化測試**：跟 oingg-mops-ts 一樣，目前靠實測真實資料驗證，沒有 unit test。
 - **沒有身份驗證**：跟 oingg-mops-ts 的 ingest API 一樣，目前完全開放。

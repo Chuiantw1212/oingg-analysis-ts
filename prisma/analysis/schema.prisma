@@ -109,3 +109,36 @@ model EpsResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("eps_result")
 }
+
+// 每股營收計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult / EpsResult 同一種結構）。
+// 欄位對應 src/domains/revenuePerShare/types.ts 的 RevenuePerShareResult。
+model RevenuePerShareResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  revenuePerShareQuarterly           Decimal? @map("revenue_per_share_quarterly") @db.Decimal(14, 4)
+  revenuePerShareQuarterlyAnnualized Decimal? @map("revenue_per_share_quarterly_annualized") @db.Decimal(14, 4)
+  revenuePerShareTtm                 Decimal? @map("revenue_per_share_ttm") @db.Decimal(14, 4)
+
+  operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收
+  // 近四季（含本季）營收加總；四季資料不齊則為 null。
+  operatingRevenueTtmValue BigInt? @map("operating_revenue_ttm_value")
+
+  paidInShares               BigInt? @map("paid_in_shares")
+  // capital_stock_history 裡實際套用的那筆紀錄生效於何時（西元年月），不是本季的民國年季。
+  capitalStockEffectiveYear  Int?    @map("capital_stock_effective_year")
+  capitalStockEffectiveMonth Int?    @map("capital_stock_effective_month")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("revenue_per_share_result")
+}
