@@ -152,3 +152,42 @@ model QuarterlyCashFlowStatement {
   @@id([symbol, year, quarter, dataType, subsidiaryCompanyId])
   @@map("quarterly_cash_flow_statement")
 }
+
+// 股本歷史——每次股本變動（現金增資、盈餘/公積轉增資、合併、減資…）生效當月一筆。
+// 查某一年季的流通股數/面額，要取 effectiveYear/effectiveMonth 小於等於目標季度的「最新一筆」，
+// 不是抓整張表最新一筆——這張表本身沒有直接的「哪一筆對應哪一季」欄位，查詢邏輯需自己處理。
+model CapitalStockHistory {
+  symbol         String
+  effectiveYear  Int    @map("effective_year")
+  effectiveMonth Int    @map("effective_month")
+
+  licenseChangeYear  Int?    @map("license_change_year")
+  licenseChangeMonth Int?    @map("license_change_month")
+  market             String?
+
+  parValue          Decimal? @map("par_value") @db.Decimal(10, 4)
+  authorizedShares  BigInt?  @map("authorized_shares")
+  authorizedCapital BigInt?  @map("authorized_capital")
+  paidInShares      BigInt?  @map("paid_in_shares")
+  paidInCapital     BigInt?  @map("paid_in_capital")
+
+  sourceInitialCapital           BigInt? @map("source_initial_capital")
+  sourceCashIncrease             BigInt? @map("source_cash_increase")
+  sourceCapitalReserveTransfer   BigInt? @map("source_capital_reserve_transfer")
+  sourceRetainedEarningsTransfer BigInt? @map("source_retained_earnings_transfer")
+  capitalReserveApprovalDate     String? @map("capital_reserve_approval_date")
+  retainedEarningsApprovalDate   String? @map("retained_earnings_approval_date")
+  sourceMergerIncrease           BigInt? @map("source_merger_increase")
+  sourceCapitalReduction         BigInt? @map("source_capital_reduction")
+  mergerApprovalDate             String? @map("merger_approval_date")
+  capitalReductionApprovalDate   String? @map("capital_reduction_approval_date")
+  sourceOther                    String? @map("source_other")
+  nonCashContribution            String? @map("non_cash_contribution")
+  remarks                        String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@id([symbol, effectiveYear, effectiveMonth])
+  @@map("capital_stock_history")
+}

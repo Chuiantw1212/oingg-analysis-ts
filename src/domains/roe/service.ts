@@ -1,4 +1,5 @@
 import prisma from '../../adapters/prisma/index';
+import { analysisPrisma } from '../../adapters/prisma/analysisClient';
 import { getPastNQuarters } from '../../shared/rocQuarter';
 import type { RoeQuery, RoeResult } from './types';
 
@@ -100,13 +101,58 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
     warnings.push(`近四季資料不齊（缺: ${quartersMissing.join(', ')}），無法計算 TTM ROE。`);
   }
 
+  const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
+
+  // 把算完的結果存進 oingg-analysis DB 的 roe_result，供之後查歷史紀錄用。
+  // 這是額外的存檔動作，不是這支 API 的主要契約——存檔失敗不應該讓已經算好的 ROE 回傳失敗。
+  try {
+    await analysisPrisma.roeResult.upsert({
+      where: {
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+      },
+      create: {
+        symbol: companyId,
+        year: yearNum,
+        season: seasonNum,
+        dataType,
+        subsidiaryCompanyId,
+        reportDate,
+        roeQuarterlyPct,
+        roeQuarterlyAnnualizedPct,
+        roeTtmPct,
+        netIncomeFieldUsed: netIncome.field,
+        netIncomeValue: netIncome.value,
+        equityFieldUsed: equity.field,
+        equityValue: equity.value,
+        ttmQuartersUsed: quartersUsed,
+        ttmQuartersMissing: quartersMissing,
+        warnings,
+      },
+      update: {
+        reportDate,
+        roeQuarterlyPct,
+        roeQuarterlyAnnualizedPct,
+        roeTtmPct,
+        netIncomeFieldUsed: netIncome.field,
+        netIncomeValue: netIncome.value,
+        equityFieldUsed: equity.field,
+        equityValue: equity.value,
+        ttmQuartersUsed: quartersUsed,
+        ttmQuartersMissing: quartersMissing,
+        warnings,
+      },
+    });
+  } catch (error) {
+    console.error('[roe]: 寫入 roe_result 失敗，不影響本次回傳結果。', error);
+  }
+
   return {
     companyId,
     year,
     season,
     dataType,
     subsidiaryCompanyId,
-    reportDate: (balanceSheet?.reportDate ?? incomeStatement?.reportDate)?.toISOString().slice(0, 10) ?? null,
+    reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     roeQuarterlyPct,
     roeQuarterlyAnnualizedPct,
     roeTtmPct,
