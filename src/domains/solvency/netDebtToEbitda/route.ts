@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/solvency/net-debt-to-ebitda:
+ * /solvency/net-debt-to-ebitda:
  *   get:
  *     summary: 計算單一公司單季淨負債對 EBITDA 比（簡易年化、TTM 兩種數值）
  *     description: >

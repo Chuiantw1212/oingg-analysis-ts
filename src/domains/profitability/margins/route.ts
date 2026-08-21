@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/profitability/margins:
+ * /profitability/margins:
  *   get:
  *     summary: 計算單一公司單季毛利率、營業利益率、稅後淨利率
  *     description: >

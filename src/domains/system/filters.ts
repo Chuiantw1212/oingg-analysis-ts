@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/filters:
+ * /filters:
  *   get:
  *     summary: 列出目前可用來 filter 的分類與欄位
  *     description: >
@@ -19,7 +19,7 @@ const router = Router();
  *       200:
  *         description: 分類 / 指標 / 欄位清單。
  */
-router.get('/api/filters', (req: Request, res: Response) => {
+router.get('/filters', (req: Request, res: Response) => {
   res.json({ categories: filterCatalog });
 });
 

@@ -35,6 +35,6 @@ apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
 apiRouter.use('/valuation', marketRatiosRouter);
 apiRouter.use('/guru', grahamNumberRouter, ncavRouter);
 
-router.use('/api', apiRouter);
+router.use(apiRouter);
 
 export default router;

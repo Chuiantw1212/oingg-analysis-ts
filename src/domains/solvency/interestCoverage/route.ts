@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/solvency/interest-coverage:
+ * /solvency/interest-coverage:
  *   get:
  *     summary: 計算單一公司單季利息保障倍數（單季、TTM 兩種數值）
  *     description: >

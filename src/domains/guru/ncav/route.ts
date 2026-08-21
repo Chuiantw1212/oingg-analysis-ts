@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/guru/ncav:
+ * /guru/ncav:
  *   get:
  *     summary: 計算單一公司單季葛拉漢淨流動資產價值（NCAV）與安全邊際價
  *     description: >

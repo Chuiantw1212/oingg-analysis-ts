@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/solvency/liquidity-ratio:
+ * /solvency/liquidity-ratio:
  *   get:
  *     summary: 計算單一公司單季流動比率、速動比率與現金比率
  *     description: >

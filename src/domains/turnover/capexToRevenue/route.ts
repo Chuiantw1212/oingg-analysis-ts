@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/turnover/capex-to-revenue:
+ * /turnover/capex-to-revenue:
  *   get:
  *     summary: 計算單一公司單季資本支出佔營收比（單季、TTM 兩種數值）
  *     description: >

@@ -29,11 +29,11 @@
 
 | code | 中文名稱 | 公式 | supported_periods | 狀態 |
 |---|---|---|---|---|
-| `PER` | 本益比 | `Stock Price / EPS` | TTM, FY, Forward, MRQ | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /api/valuation/market-ratios`。直接來自 `daily_valuation.peRatio`，見上方說明 |
+| `PER` | 本益比 | `Stock Price / EPS` | TTM, FY, Forward, MRQ | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.peRatio`，見上方說明 |
 | `CAPE` | 席勒本益比 / 週期調整本益比 | `Real Price / 10-Year Average Real EPS` | 10Y_Rolling | ⬜ 未實作——卡在財報歷史深度不夠，見下方說明（**不是**通膨資料的問題，那個已經有了） |
-| `PBR` | 股價淨值比 | `Stock Price / Book Value Per Share` | MRQ, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /api/valuation/market-ratios`。直接來自 `daily_valuation.pbRatio` |
+| `PBR` | 股價淨值比 | `Stock Price / Book Value Per Share` | MRQ, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.pbRatio` |
 | `PSR` | 股價營收比 | `Market Cap / Annual Revenue` | TTM, FY | ⬜ 未實作，`daily_valuation` 沒有這個欄位，要自己算（市值 = `daily_price.close` × 流通股數，流通股數已有） |
 | `P_FCF` | 股價自由現金流比 | `Market Cap / Free Cash Flow` | TTM, FY | ⬜ 未實作，同上，需要自己組市值 |
 | `EV_EBITDA` | 企業價值倍數 | `Enterprise Value / EBITDA` | TTM, FY | ⬜ 未實作，EV = 市值 + 淨負債（[`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 已有淨負債），EBITDA 也已經有了，只差市值 |
-| `Dividend_Yield` | 股息殖利率 | `Annual Dividend Per Share / Stock Price` | TTM, Forward, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /api/valuation/market-ratios`。直接來自 `daily_valuation.dividendYield` |
+| `Dividend_Yield` | 股息殖利率 | `Annual Dividend Per Share / Stock Price` | TTM, Forward, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.dividendYield` |
 | `NAV_Discount_Premium` | 淨值折溢價率 | `(Market Price - NAV) / NAV` | Daily, MRQ | ⬜ 未實作，適用於封閉式基金/ETF/REITs，不是一般個股，優先度低 |

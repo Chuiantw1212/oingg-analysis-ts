@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/solvency/de-ratio:
+ * /solvency/de-ratio:
  *   get:
  *     summary: 計算單一公司單季負債權益比
  *     description: >

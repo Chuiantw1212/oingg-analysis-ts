@@ -7,12 +7,12 @@
 
 | code | 中文名稱 | 公式 | supported_periods | 狀態 |
 |---|---|---|---|---|
-| `EPS` | 每股盈餘 | `(Net Income - Preferred Dividends) / Weighted Average Common Shares` | MRQ, TTM, FY, Diluted | ✅ 已實作 — [`eps/`](eps/)，`GET /api/profitability/eps`（單季/年化/TTM） |
-| `Gross_Margin` | 毛利率 | `(Revenue - COGS) / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /api/profitability/margins`（單季/TTM，沒有年化版本，見下方說明） |
-| `Operating_Margin` | 營業利益率 | `Operating Income / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /api/profitability/margins`（單季/TTM） |
-| `Net_Profit_Margin` | 稅後淨利率 | `Net Income / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /api/profitability/margins`（單季/TTM） |
-| `ROE` | 股東權益報酬率 | `Net Income / Shareholders' Equity` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roe/`](roe/)，`GET /api/profitability/roe`（單季/年化/TTM） |
-| `ROA` | 總資產報酬率 | `Net Income / Total Assets` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roa/`](roa/)，`GET /api/profitability/roa`（單季/年化/TTM） |
+| `EPS` | 每股盈餘 | `(Net Income - Preferred Dividends) / Weighted Average Common Shares` | MRQ, TTM, FY, Diluted | ✅ 已實作 — [`eps/`](eps/)，`GET /profitability/eps`（單季/年化/TTM） |
+| `Gross_Margin` | 毛利率 | `(Revenue - COGS) / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /profitability/margins`（單季/TTM，沒有年化版本，見下方說明） |
+| `Operating_Margin` | 營業利益率 | `Operating Income / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /profitability/margins`（單季/TTM） |
+| `Net_Profit_Margin` | 稅後淨利率 | `Net Income / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /profitability/margins`（單季/TTM） |
+| `ROE` | 股東權益報酬率 | `Net Income / Shareholders' Equity` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roe/`](roe/)，`GET /profitability/roe`（單季/年化/TTM） |
+| `ROA` | 總資產報酬率 | `Net Income / Total Assets` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roa/`](roa/)，`GET /profitability/roa`（單季/年化/TTM） |
 | `ROIC` | 投入資本回報率 | `NOPAT / Invested Capital` | TTM, FY | ⬜ 未實作 |
 | `ROCE` | 使用資本報酬率 | `EBIT / (Total Assets - Current Liabilities)` | TTM, FY | ⬜ 未實作 |
 | `CFROI` | 現金流投資回報率 | `Gross Cash Flow / Gross Invested Capital` | TTM, FY | ⬜ 未實作 |
@@ -25,8 +25,8 @@
 
 | 指標 | 公式 | 狀態 |
 |---|---|---|
-| BVPS（每股淨值） | `Shareholders' Equity / Paid-in Shares` | ✅ 已實作 — [`bvps/`](bvps/)，`GET /api/profitability/bvps` |
-| 每股營收 | `Revenue / Paid-in Shares` | ✅ 已實作 — [`revenuePerShare/`](revenuePerShare/)，`GET /api/profitability/revenue-per-share`（單季/年化/TTM） |
+| BVPS（每股淨值） | `Shareholders' Equity / Paid-in Shares` | ✅ 已實作 — [`bvps/`](bvps/)，`GET /profitability/bvps` |
+| 每股營收 | `Revenue / Paid-in Shares` | ✅ 已實作 — [`revenuePerShare/`](revenuePerShare/)，`GET /profitability/revenue-per-share`（單季/年化/TTM） |
 
 ## 實作慣例（給之後要做剩餘指標的人）
 

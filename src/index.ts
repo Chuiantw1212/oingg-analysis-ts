@@ -14,6 +14,7 @@ import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
+import { checkFilterCatalogConsistency } from './domains/system/filterCatalogCheck';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use(errorHandler);
 // --- Server Start ---
 const startServer = async () => {
   try {
+    checkFilterCatalogConsistency(config.isProduction);
     await connectDb();
     await connectAnalysisDb();
     await connectTwseDb();

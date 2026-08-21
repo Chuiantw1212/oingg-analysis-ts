@@ -7,13 +7,13 @@
 
 | code | 中文名稱 | 公式 | supported_periods | 狀態 |
 |---|---|---|---|---|
-| `Current_Ratio` | 流動比率 | `Current Assets / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /api/solvency/liquidity-ratio` |
-| `Quick_Ratio` | 速動比率 | `(Cash + Marketable Securities + Receivables) / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /api/solvency/liquidity-ratio`。公式略有差異，見下方說明 |
-| `Cash_Ratio` | 現金比率 | `(Cash + Cash Equivalents) / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /api/solvency/liquidity-ratio` |
-| `DE_Ratio` | 負債權益比 | `Total Debt / Shareholders' Equity` | MRQ, FY | ✅ 已實作 — [`deRatio/`](deRatio/)，`GET /api/solvency/de-ratio`。`Total Debt` 用的是有息負債（短期借款+應付公司債+長期借款），不是總負債 |
-| `Debt_to_Assets` | 資產負債率 | `Total Liabilities / Total Assets` | MRQ, FY | ✅ 已實作 — [`debtRatio/`](debtRatio/)，`GET /api/solvency/debt-ratio` |
-| `Net_Debt_to_EBITDA` | 淨負債對 EBITDA 比 | `(Total Debt - Cash) / EBITDA` | TTM, FY | ✅ 已實作 — [`netDebtToEbitda/`](netDebtToEbitda/)，`GET /api/solvency/net-debt-to-ebitda`（簡單年化/TTM，沒有原始單季版本，見下方說明） |
-| `Interest_Coverage` | 利息保障倍數 | `EBIT / Interest Expense` | TTM, FY | ✅ 已實作 — [`interestCoverage/`](interestCoverage/)，`GET /api/solvency/interest-coverage`（單季/TTM，見下方說明） |
+| `Current_Ratio` | 流動比率 | `Current Assets / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /solvency/liquidity-ratio` |
+| `Quick_Ratio` | 速動比率 | `(Cash + Marketable Securities + Receivables) / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /solvency/liquidity-ratio`。公式略有差異，見下方說明 |
+| `Cash_Ratio` | 現金比率 | `(Cash + Cash Equivalents) / Current Liabilities` | MRQ, FY | ✅ 已實作 — [`liquidityRatio/`](liquidityRatio/)，`GET /solvency/liquidity-ratio` |
+| `DE_Ratio` | 負債權益比 | `Total Debt / Shareholders' Equity` | MRQ, FY | ✅ 已實作 — [`deRatio/`](deRatio/)，`GET /solvency/de-ratio`。`Total Debt` 用的是有息負債（短期借款+應付公司債+長期借款），不是總負債 |
+| `Debt_to_Assets` | 資產負債率 | `Total Liabilities / Total Assets` | MRQ, FY | ✅ 已實作 — [`debtRatio/`](debtRatio/)，`GET /solvency/debt-ratio` |
+| `Net_Debt_to_EBITDA` | 淨負債對 EBITDA 比 | `(Total Debt - Cash) / EBITDA` | TTM, FY | ✅ 已實作 — [`netDebtToEbitda/`](netDebtToEbitda/)，`GET /solvency/net-debt-to-ebitda`（簡單年化/TTM，沒有原始單季版本，見下方說明） |
+| `Interest_Coverage` | 利息保障倍數 | `EBIT / Interest Expense` | TTM, FY | ✅ 已實作 — [`interestCoverage/`](interestCoverage/)，`GET /solvency/interest-coverage`（單季/TTM，見下方說明） |
 | `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ⬜ 未實作，見下方說明 |
 
 ## Altman Z-Score 卡在哪裡

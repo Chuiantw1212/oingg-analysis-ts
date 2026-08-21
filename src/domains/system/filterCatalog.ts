@@ -3,7 +3,7 @@
 // 因為同一個比率的單季/TTM 口徑是資料庫裡兩個不同欄位，各自才是可以拿來 filter 的最小單位。
 // key 對應 src/domains 底下的資料夾/檔案結構，跟各分類 README 的「指標清單」表格一一對應——
 // 只列 ✅ 已實作的，未實作的指標不會出現在這裡（沒有資料可以 filter）。
-// 新增指標時記得同步更新這裡，不然新指標不會出現在 /api/filters。
+// 新增指標時記得同步更新這裡，不然新指標不會出現在 /filters。
 
 export type FilterFieldPeriod = 'quarterly' | 'quarterlyAnnualized' | 'ttm' | 'snapshot' | 'daily';
 
@@ -38,7 +38,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'eps',
         name: '每股盈餘（EPS）',
-        path: '/api/profitability/eps',
+        path: '/profitability/eps',
         fields: [
           { key: 'epsQuarterly', name: 'EPS（單季）', period: 'quarterly' },
           { key: 'epsQuarterlyAnnualized', name: 'EPS（單季年化）', period: 'quarterlyAnnualized' },
@@ -48,13 +48,13 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'bvps',
         name: '每股淨值（BVPS）',
-        path: '/api/profitability/bvps',
+        path: '/profitability/bvps',
         fields: [{ key: 'bvps', name: '每股淨值（BVPS）', period: 'snapshot' }],
       },
       {
         key: 'revenuePerShare',
         name: '每股營收',
-        path: '/api/profitability/revenue-per-share',
+        path: '/profitability/revenue-per-share',
         fields: [
           { key: 'revenuePerShareQuarterly', name: '每股營收（單季）', period: 'quarterly' },
           { key: 'revenuePerShareQuarterlyAnnualized', name: '每股營收（單季年化）', period: 'quarterlyAnnualized' },
@@ -64,7 +64,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'margins',
         name: '毛利率／營業利益率／稅後淨利率',
-        path: '/api/profitability/margins',
+        path: '/profitability/margins',
         fields: [
           { key: 'grossMarginQuarterly', name: '毛利率（單季）', period: 'quarterly' },
           { key: 'grossMarginTtm', name: '毛利率（TTM）', period: 'ttm' },
@@ -77,7 +77,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'roe',
         name: '股東權益報酬率（ROE）',
-        path: '/api/profitability/roe',
+        path: '/profitability/roe',
         fields: [
           { key: 'roeQuarterlyPct', name: 'ROE（單季）', period: 'quarterly' },
           { key: 'roeQuarterlyAnnualizedPct', name: 'ROE（單季年化）', period: 'quarterlyAnnualized' },
@@ -87,7 +87,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'roa',
         name: '總資產報酬率（ROA）',
-        path: '/api/profitability/roa',
+        path: '/profitability/roa',
         fields: [
           { key: 'roaQuarterlyPct', name: 'ROA（單季）', period: 'quarterly' },
           { key: 'roaQuarterlyAnnualizedPct', name: 'ROA（單季年化）', period: 'quarterlyAnnualized' },
@@ -103,7 +103,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'cashFlowPerShare',
         name: '每股營業現金流／每股自由現金流',
-        path: '/api/cash-flow/cash-flow-per-share',
+        path: '/cash-flow/cash-flow-per-share',
         fields: [
           { key: 'ocfPerShareQuarterly', name: '每股營業現金流 OCF（單季）', period: 'quarterly' },
           { key: 'ocfPerShareQuarterlyAnnualized', name: '每股營業現金流 OCF（單季年化）', period: 'quarterlyAnnualized' },
@@ -122,7 +122,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'liquidityRatio',
         name: '流動比率／速動比率／現金比率',
-        path: '/api/solvency/liquidity-ratio',
+        path: '/solvency/liquidity-ratio',
         fields: [
           { key: 'currentRatioPct', name: '流動比率', period: 'snapshot' },
           { key: 'quickRatioPct', name: '速動比率', period: 'snapshot' },
@@ -132,19 +132,19 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'debtRatio',
         name: '資產負債率',
-        path: '/api/solvency/debt-ratio',
+        path: '/solvency/debt-ratio',
         fields: [{ key: 'debtRatioPct', name: '資產負債率', period: 'snapshot' }],
       },
       {
         key: 'deRatio',
         name: '負債權益比',
-        path: '/api/solvency/de-ratio',
+        path: '/solvency/de-ratio',
         fields: [{ key: 'deRatioPct', name: '負債權益比', period: 'snapshot' }],
       },
       {
         key: 'interestCoverage',
         name: '利息保障倍數',
-        path: '/api/solvency/interest-coverage',
+        path: '/solvency/interest-coverage',
         fields: [
           { key: 'interestCoverageQuarterly', name: '利息保障倍數（單季）', period: 'quarterly' },
           { key: 'interestCoverageTtm', name: '利息保障倍數（TTM）', period: 'ttm' },
@@ -153,7 +153,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'netDebtToEbitda',
         name: '淨負債對 EBITDA 比',
-        path: '/api/solvency/net-debt-to-ebitda',
+        path: '/solvency/net-debt-to-ebitda',
         fields: [
           { key: 'netDebtToEbitdaQuarterlyAnnualized', name: '淨負債對 EBITDA 比（單季年化）', period: 'quarterlyAnnualized' },
           { key: 'netDebtToEbitdaTtm', name: '淨負債對 EBITDA 比（TTM）', period: 'ttm' },
@@ -168,7 +168,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'turnoverRatio',
         name: '存貨／應收帳款／總資產／固定資產周轉率',
-        path: '/api/turnover/turnover-ratio',
+        path: '/turnover/turnover-ratio',
         fields: [
           { key: 'inventoryTurnoverQuarterly', name: '存貨周轉率（單季）', period: 'quarterly' },
           { key: 'inventoryTurnoverQuarterlyAnnualized', name: '存貨周轉率（單季年化）', period: 'quarterlyAnnualized' },
@@ -187,7 +187,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'capexToRevenue',
         name: '資本支出佔營收比',
-        path: '/api/turnover/capex-to-revenue',
+        path: '/turnover/capex-to-revenue',
         fields: [
           { key: 'capexToRevenueQuarterly', name: '資本支出佔營收比（單季）', period: 'quarterly' },
           { key: 'capexToRevenueTtm', name: '資本支出佔營收比（TTM）', period: 'ttm' },
@@ -202,7 +202,7 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'marketRatios',
         name: '本益比／股價淨值比／股息殖利率',
-        path: '/api/valuation/market-ratios',
+        path: '/valuation/market-ratios',
         fields: [
           { key: 'peRatio', name: '本益比（PER）', period: 'daily' },
           { key: 'pbRatio', name: '股價淨值比（PBR）', period: 'daily' },
@@ -218,13 +218,13 @@ export const filterCatalog: FilterCategory[] = [
       {
         key: 'grahamNumber',
         name: '葛拉漢數（Graham Number）',
-        path: '/api/guru/graham-number',
+        path: '/guru/graham-number',
         fields: [{ key: 'grahamNumber', name: '葛拉漢數', period: 'ttm' }],
       },
       {
         key: 'ncav',
         name: '葛拉漢淨流動資產價值（Graham NCAV）',
-        path: '/api/guru/ncav',
+        path: '/guru/ncav',
         fields: [
           { key: 'ncav', name: 'NCAV（淨流動資產價值）', period: 'snapshot' },
           { key: 'marginOfSafetyPrice', name: '安全邊際價', period: 'snapshot' },

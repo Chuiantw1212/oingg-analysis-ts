@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/turnover/turnover-ratio:
+ * /turnover/turnover-ratio:
  *   get:
  *     summary: 計算單一公司單季存貨周轉率、應收帳款周轉率、總資產周轉率、固定資產周轉率
  *     description: >

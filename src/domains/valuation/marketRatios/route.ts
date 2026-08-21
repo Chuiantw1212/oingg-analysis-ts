@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/valuation/market-ratios:
+ * /valuation/market-ratios:
  *   get:
  *     summary: 查詢單一公司最新（或指定日期）的 PER、PBR、股利殖利率（直接採用 oingg-twse 已算好的數字）
  *     description: >
@@ -23,7 +23,7 @@ const router = Router();
  *
  *       **重要警告**：peRatio/pbRatio/dividendYieldPct 是 oingg-twse 算好的數字，本服務不知道
  *       對方 EPS 用的是單季、TTM 還是年度口徑——是外部黑盒數字，跟本服務自己算的 EPS
- *       （GET /api/profitability/eps）、BVPS（GET /api/profitability/bvps）口徑不保證一致，
+ *       （GET /profitability/eps）、BVPS（GET /profitability/bvps）口徑不保證一致，
  *       不要拿來互相驗證或混用。這個警告固定會出現在回應的 warnings 裡。
  *     tags:
  *       - Valuation

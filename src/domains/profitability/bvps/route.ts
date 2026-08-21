@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/profitability/bvps:
+ * /profitability/bvps:
  *   get:
  *     summary: 計算單一公司單季 BVPS（每股淨值）
  *     description: >

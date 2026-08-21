@@ -5,12 +5,12 @@ const router = Router();
 
 /**
  * @swagger
- * /api/guru/graham-number:
+ * /guru/graham-number:
  *   get:
  *     summary: 計算單一公司單季葛拉漢數（Graham Number）
  *     description: >
- *       本服務第一個「複合指標」——直接引用已經做好的 GET /api/profitability/eps 跟
- *       GET /api/profitability/bvps 兩支服務算出來的值，不重複實作淨利/權益口徑選擇、
+ *       本服務第一個「複合指標」——直接引用已經做好的 GET /profitability/eps 跟
+ *       GET /profitability/bvps 兩支服務算出來的值，不重複實作淨利/權益口徑選擇、
  *       流通股數查詢那些邏輯。呼叫這支 API 時，eps/bvps 服務也會各自照常把自己的計算結果
  *       upsert 進 profitability_eps/profitability_bvps，這是預期的副作用，不是意外。
  *

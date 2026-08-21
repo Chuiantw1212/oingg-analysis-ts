@@ -12,7 +12,7 @@
 
 | code | 中文名稱 | 公式 | supported_periods | 說明 |
 |---|---|---|---|---|
-| `Graham_NCAV` | 葛拉漢淨流動資產價值 | `(Current Assets - Total Liabilities - Preferred Stock) / Shares` | MRQ, FY | ✅ 已實作 — [`ncav/`](ncav/)，`GET /api/guru/ncav`。同時回傳安全邊際價（NCAV x 2/3），見下方說明 |
+| `Graham_NCAV` | 葛拉漢淨流動資產價值 | `(Current Assets - Total Liabilities - Preferred Stock) / Shares` | MRQ, FY | ✅ 已實作 — [`ncav/`](ncav/)，`GET /guru/ncav`。同時回傳安全邊際價（NCAV x 2/3），見下方說明 |
 | `Greenblatt_Magic_Formula` | 葛林布雷神奇公式 | `Rank(Earnings Yield = EBIT/EV) + Rank(ROC = EBIT/(Net Working Capital + Net Fixed Assets))` | TTM, FY | 結合高盈餘殖利率與高資本報酬率之雙因子綜合排名模型 |
 | `Lynch_PEG_Fair_Value` | 彼得林區本益成長模型 | `PEG = PER / Expected Growth Rate; Fair Value = Expected Growth Rate * EPS` | Forward, TTM | 以預期成長率校正傳統本益比，設定成長股之動態合理估值 |
 | `Buffett_Owner_Earnings` | 巴菲特股東盈餘 | `Net Income + D&A - Maintenance CapEx` | TTM, FY | 衡量企業在維持現有競爭力下，股東真正能自由提領的實質現金 |
@@ -24,7 +24,7 @@
 
 | 指標 | 公式 | 狀態 |
 |---|---|---|
-| 葛拉漢數（Graham Number） | `sqrt(22.5 x EPS(TTM) x BVPS)` | ✅ 已實作 — [`grahamNumber/`](grahamNumber/)，`GET /api/guru/graham-number` |
+| 葛拉漢數（Graham Number） | `sqrt(22.5 x EPS(TTM) x BVPS)` | ✅ 已實作 — [`grahamNumber/`](grahamNumber/)，`GET /guru/graham-number` |
 
 taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。
 

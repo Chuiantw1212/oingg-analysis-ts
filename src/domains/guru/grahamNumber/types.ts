@@ -23,10 +23,10 @@ export interface GrahamNumberResult {
   grahamNumber: number | null;
 
   epsTtm: {
-    value: number | null; // 引用自 GET /api/profitability/eps 的 epsTtm
+    value: number | null; // 引用自 GET /profitability/eps 的 epsTtm
   };
   bvps: {
-    value: number | null; // 引用自 GET /api/profitability/bvps 的 bvps
+    value: number | null; // 引用自 GET /profitability/bvps 的 bvps
   };
 
   warnings: string[];
