@@ -1,5 +1,6 @@
 import { Router } from 'ultimate-express';
 import rootRouter from './domains/system/root';
+import filtersRouter from './domains/system/filters';
 import roeRouter from './domains/profitability/roe/route';
 import roaRouter from './domains/profitability/roa/route';
 import bvpsRouter from './domains/profitability/bvps/route';
@@ -22,6 +23,7 @@ const router = Router();
 
 // --- System & Root Routes ---
 router.use(rootRouter);
+router.use(filtersRouter);
 
 // --- API Routes ---
 // URL 路徑跟 src/domains 底下的分類資料夾一一對應，方便維護時直接照路徑找到程式碼位置。

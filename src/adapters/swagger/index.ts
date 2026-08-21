@@ -31,6 +31,7 @@ const options: swaggerJSDoc.Options = {
     // 每個 tag 對應一個分類資料夾（見 src/domains/README.md 的分類索引），
     // 不要再用單一的 "Ratios" tag 把所有 API 混在一起。
     tags: [
+      { name: 'System', description: '伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單' },
       { name: 'Profitability', description: '獲利能力與資本配置效率——ROE、ROA、BVPS、EPS、每股營收、毛利率/營業利益率/稅後淨利率' },
       { name: 'Cash Flow', description: '現金流品質與法證會計防雷——每股營業現金流（OCF）、每股自由現金流（FCF）' },
       { name: 'Solvency', description: '財務結構、償債安全與破產預警——負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比' },
