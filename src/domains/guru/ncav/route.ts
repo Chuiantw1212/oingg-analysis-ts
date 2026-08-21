@@ -23,7 +23,7 @@ const router = Router();
  *       - **這個公式不適用金融/保險業**：這類公司的資產負債表不採流動/非流動分類，`currentAssets`
  *         查不到會直接回傳 null，這是正常情境，不是伺服器錯誤。
  *     tags:
- *       - Ratios
+ *       - Guru
  *     parameters:
  *       - in: query
  *         name: companyId

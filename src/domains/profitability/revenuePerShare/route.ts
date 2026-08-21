@@ -20,7 +20,7 @@ const router = Router();
  *         不是抓整張表最新一筆——股本是會隨現金增資、盈餘轉增資、減資等變動的歷史資料。
  *       - 若指定 subsidiaryCompanyId，流通股數仍是母公司（上市櫃公司本身）的股本結構，會在 warnings 中註明。
  *     tags:
- *       - Ratios
+ *       - Profitability
  *     parameters:
  *       - in: query
  *         name: companyId

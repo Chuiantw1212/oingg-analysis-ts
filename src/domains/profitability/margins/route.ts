@@ -22,7 +22,7 @@ const router = Router();
  *       - *Ttm：近四季（含本季）營收/毛利/營業利益/淨利各自加總後再算比率，近四季資料須完整存在才會計算，否則為 null——
  *         一季只要任一欄位為 null，該季就整個視為不齊，三個比率共用同一組完整性判斷。
  *     tags:
- *       - Ratios
+ *       - Profitability
  *     parameters:
  *       - in: query
  *         name: companyId

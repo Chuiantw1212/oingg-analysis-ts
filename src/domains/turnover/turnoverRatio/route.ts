@@ -22,7 +22,7 @@ const router = Router();
  *       - *Ttm：近四季（含本季）營業成本／營收加總 / 本季期末餘額，近四季資料須完整存在才會計算，否則為 null——
  *         一季只要營業成本或營收任一為 null，該季就整個視為不齊，四個周轉率共用同一組完整性判斷。
  *     tags:
- *       - Ratios
+ *       - Turnover
  *     parameters:
  *       - in: query
  *         name: companyId

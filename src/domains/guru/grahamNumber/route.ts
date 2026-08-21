@@ -21,7 +21,7 @@ const router = Router();
  *       - EPS 用 TTM（近四季滾動），不是單季或簡單年化版本。
  *       - EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值），會在 warnings 註明。
  *     tags:
- *       - Ratios
+ *       - Guru
  *     parameters:
  *       - in: query
  *         name: companyId

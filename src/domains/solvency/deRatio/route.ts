@@ -20,7 +20,7 @@ const router = Router();
  *       - 權益欄位優先採用「歸屬於母公司」口徑（equityAttributableToParent），缺漏時退回用整體數字（totalEquity）。
  *       - 純資產負債表的時點快照，不像 ROE/ROA 有單季/年化/TTM 的區別。
  *     tags:
- *       - Ratios
+ *       - Solvency
  *     parameters:
  *       - in: query
  *         name: companyId

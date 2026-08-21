@@ -25,7 +25,7 @@ const router = Router();
  *       - TTM：近四季（含本季）EBITDA 各自加總，一季只要稅前淨利/利息費用/折舊/攤銷任一為 null 就視為該季不齊，
  *         近四季資料須完整存在才會計算 TTM 版本，否則為 null。
  *     tags:
- *       - Ratios
+ *       - Solvency
  *     parameters:
  *       - in: query
  *         name: companyId

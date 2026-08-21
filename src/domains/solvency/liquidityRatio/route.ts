@@ -18,7 +18,7 @@ const router = Router();
  *       - cashRatioPct（現金比率） = 本季期末現金及約當現金（cashAndEquivalents） / currentLiabilities x 100。
  *       - 純資產負債表的時點快照，不像 ROE/ROA 有單季/年化/TTM 的區別。
  *     tags:
- *       - Ratios
+ *       - Solvency
  *     parameters:
  *       - in: query
  *         name: companyId

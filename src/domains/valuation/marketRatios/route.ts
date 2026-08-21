@@ -26,7 +26,7 @@ const router = Router();
  *       （GET /api/profitability/eps）、BVPS（GET /api/profitability/bvps）口徑不保證一致，
  *       不要拿來互相驗證或混用。這個警告固定會出現在回應的 warnings 裡。
  *     tags:
- *       - Ratios
+ *       - Valuation
  *     parameters:
  *       - in: query
  *         name: companyId

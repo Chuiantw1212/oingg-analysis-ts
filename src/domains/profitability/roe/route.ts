@@ -19,7 +19,7 @@ const router = Router();
  *       - roeQuarterlyAnnualizedPct：roeQuarterlyPct 簡易年化（x4），非以近四季實際加總計算。
  *       - roeTtmPct：近四季（含本季）淨利加總 / 本季期末權益 x 100，近四季資料須完整存在才會計算，否則為 null。
  *     tags:
- *       - Ratios
+ *       - Profitability
  *     parameters:
  *       - in: query
  *         name: companyId

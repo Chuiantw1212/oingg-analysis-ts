@@ -20,7 +20,7 @@ const router = Router();
  *       - capexToRevenueTtm = 近四季（含本季）營收/資本支出各自加總後再算比率，近四季資料須完整存在才會計算，
  *         否則為 null。
  *     tags:
- *       - Ratios
+ *       - Turnover
  *     parameters:
  *       - in: query
  *         name: companyId

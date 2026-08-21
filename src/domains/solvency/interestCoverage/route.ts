@@ -21,7 +21,7 @@ const router = Router();
  *         否則為 null。
  *       - 利息費用為零時無法計算（除以零），會在 warnings 中註明。
  *     tags:
- *       - Ratios
+ *       - Solvency
  *     parameters:
  *       - in: query
  *         name: companyId

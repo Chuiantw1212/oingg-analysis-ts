@@ -17,7 +17,7 @@ const router = Router();
  *       - 純資產負債表的時點快照，不像 ROE/ROA 有單季/年化/TTM 的區別——資產負債表是某一天的餘額，
  *         沒有「近四季加總」這種概念可以套用。
  *     tags:
- *       - Ratios
+ *       - Solvency
  *     parameters:
  *       - in: query
  *         name: companyId

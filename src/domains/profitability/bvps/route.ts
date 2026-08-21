@@ -19,7 +19,7 @@ const router = Router();
  *       - bvps = 本季期末權益 / 上述流通股數。
  *       - 若指定 subsidiaryCompanyId，流通股數仍是母公司（上市櫃公司本身）的股本結構，會在 warnings 中註明。
  *     tags:
- *       - Ratios
+ *       - Profitability
  *     parameters:
  *       - in: query
  *         name: companyId
