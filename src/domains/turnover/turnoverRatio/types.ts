@@ -37,6 +37,25 @@ export interface TurnoverRatioResult {
   fixedAssetTurnoverQuarterlyAnnualized: number | null;
   fixedAssetTurnoverTtm: number | null;
 
+  // 應付帳款周轉率（次）= 本季營業成本 / 本季期末應付帳款——DPO 的「次數」版本，跟其他三個周轉率同一種結構。
+  payablesTurnoverQuarterly: number | null;
+  payablesTurnoverQuarterlyAnnualized: number | null;
+  payablesTurnoverTtm: number | null;
+
+  // DIO/DSO/DPO（週轉天數）= 365 / 周轉率（年化版本）。只提供年化跟 TTM 兩種口徑，
+  // 不提供「單季未年化」版本——365 / 單季周轉率算出來是「一季裡的天數」，不是有意義的「週轉天數」，
+  // 週轉天數的定義本來就是以一年為基準（跟 turnoverRatio 本身可以只看單季次數不同）。
+  inventoryDaysQuarterlyAnnualized: number | null; // DIO
+  inventoryDaysTtm: number | null;
+  receivablesDaysQuarterlyAnnualized: number | null; // DSO
+  receivablesDaysTtm: number | null;
+  payablesDaysQuarterlyAnnualized: number | null; // DPO
+  payablesDaysTtm: number | null;
+
+  // CCC 現金轉換週期 = DIO + DSO - DPO，同樣只有年化跟 TTM 兩種口徑（依賴上面三組天數）。
+  cashConversionCycleQuarterlyAnnualized: number | null;
+  cashConversionCycleTtm: number | null;
+
   operatingCost: {
     value: string | null; // BigInt as string；本季營業成本
   };
@@ -61,6 +80,9 @@ export interface TurnoverRatioResult {
   };
   propertyPlantEquipment: {
     value: string | null; // BigInt as string；本季期末不動產、廠房及設備
+  };
+  accountsPayable: {
+    value: string | null; // BigInt as string；本季期末應付帳款
   };
 
   ttm: {

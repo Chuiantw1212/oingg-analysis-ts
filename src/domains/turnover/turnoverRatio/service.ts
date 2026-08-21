@@ -3,10 +3,16 @@ import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
 import { getPastNQuarters } from '../../../shared/rocQuarter';
 import type { TurnoverRatioQuery, TurnoverRatioResult } from './types';
 
-// 周轉率用期末餘額（存貨、應收帳款、總資產），不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。
+// 周轉率用期末餘額（存貨、應收帳款、應付帳款、總資產），不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。
 const toTurnover = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
   return Math.round((Number(numerator) / Number(denominator)) * 100) / 100; // 四捨五入到小數 2 位，單位是「次」
+};
+
+// DIO/DSO/DPO = 365 / 年化周轉率。周轉率為 0（分子營業成本/營收剛好是 0）時無法換算天數，回傳 null。
+const toDays = (annualizedTurnover: number | null): number | null => {
+  if (annualizedTurnover === null || annualizedTurnover === 0) return null;
+  return Math.round((365 / annualizedTurnover) * 100) / 100;
 };
 
 export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise<TurnoverRatioResult> => {
@@ -31,6 +37,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
   const accountsReceivable = balanceSheet?.accountsReceivable ?? null;
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const propertyPlantEquipment = balanceSheet?.propertyPlantEquipment ?? null;
+  const accountsPayable = balanceSheet?.accountsPayable ?? null;
   const operatingCost = currentIncomeStatement?.operatingCost ?? null;
   const operatingRevenue = currentIncomeStatement?.operatingRevenue ?? null;
 
@@ -80,6 +87,8 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
   let assetTurnoverQuarterlyAnnualized: number | null = null;
   let fixedAssetTurnoverQuarterly: number | null = null;
   let fixedAssetTurnoverQuarterlyAnnualized: number | null = null;
+  let payablesTurnoverQuarterly: number | null = null;
+  let payablesTurnoverQuarterlyAnnualized: number | null = null;
 
   if (operatingCost !== null && inventory !== null) {
     inventoryTurnoverQuarterly = toTurnover(operatingCost, inventory);
@@ -101,6 +110,11 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     if (fixedAssetTurnoverQuarterly !== null) fixedAssetTurnoverQuarterlyAnnualized = Math.round(fixedAssetTurnoverQuarterly * 4 * 100) / 100;
     if (propertyPlantEquipment <= 0n) warnings.push('本季期末不動產、廠房及設備為零或負數，固定資產周轉率數值意義有限，請自行判斷是否採用。');
   }
+  if (operatingCost !== null && accountsPayable !== null) {
+    payablesTurnoverQuarterly = toTurnover(operatingCost, accountsPayable);
+    if (payablesTurnoverQuarterly !== null) payablesTurnoverQuarterlyAnnualized = Math.round(payablesTurnoverQuarterly * 4 * 100) / 100;
+    if (accountsPayable <= 0n) warnings.push('本季期末應付帳款為零或負數，應付帳款周轉率數值意義有限，請自行判斷是否採用。');
+  }
 
   const operatingCostTtmValue = ttmComplete ? costTtmSum : null;
   const operatingRevenueTtmValue = ttmComplete ? revenueTtmSum : null;
@@ -111,6 +125,25 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
   const assetTurnoverTtm = operatingRevenueTtmValue !== null && totalAssets !== null ? toTurnover(operatingRevenueTtmValue, totalAssets) : null;
   const fixedAssetTurnoverTtm =
     operatingRevenueTtmValue !== null && propertyPlantEquipment !== null ? toTurnover(operatingRevenueTtmValue, propertyPlantEquipment) : null;
+  // 應付帳款周轉率 TTM 分子跟存貨周轉率 TTM 共用同一組營業成本加總（costTtmSum），不用再查一次。
+  const payablesTurnoverTtm = operatingCostTtmValue !== null && accountsPayable !== null ? toTurnover(operatingCostTtmValue, accountsPayable) : null;
+
+  // DIO/DSO/DPO 只提供年化跟 TTM 兩種口徑（原因見 types.ts 註解），CCC = DIO + DSO - DPO。
+  const inventoryDaysQuarterlyAnnualized = toDays(inventoryTurnoverQuarterlyAnnualized);
+  const inventoryDaysTtm = toDays(inventoryTurnoverTtm);
+  const receivablesDaysQuarterlyAnnualized = toDays(receivablesTurnoverQuarterlyAnnualized);
+  const receivablesDaysTtm = toDays(receivablesTurnoverTtm);
+  const payablesDaysQuarterlyAnnualized = toDays(payablesTurnoverQuarterlyAnnualized);
+  const payablesDaysTtm = toDays(payablesTurnoverTtm);
+
+  const cashConversionCycleQuarterlyAnnualized =
+    inventoryDaysQuarterlyAnnualized !== null && receivablesDaysQuarterlyAnnualized !== null && payablesDaysQuarterlyAnnualized !== null
+      ? Math.round((inventoryDaysQuarterlyAnnualized + receivablesDaysQuarterlyAnnualized - payablesDaysQuarterlyAnnualized) * 100) / 100
+      : null;
+  const cashConversionCycleTtm =
+    inventoryDaysTtm !== null && receivablesDaysTtm !== null && payablesDaysTtm !== null
+      ? Math.round((inventoryDaysTtm + receivablesDaysTtm - payablesDaysTtm) * 100) / 100
+      : null;
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? null;
 
@@ -139,6 +172,17 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         fixedAssetTurnoverQuarterly,
         fixedAssetTurnoverQuarterlyAnnualized,
         fixedAssetTurnoverTtm,
+        payablesTurnoverQuarterly,
+        payablesTurnoverQuarterlyAnnualized,
+        payablesTurnoverTtm,
+        inventoryDaysQuarterlyAnnualized,
+        inventoryDaysTtm,
+        receivablesDaysQuarterlyAnnualized,
+        receivablesDaysTtm,
+        payablesDaysQuarterlyAnnualized,
+        payablesDaysTtm,
+        cashConversionCycleQuarterlyAnnualized,
+        cashConversionCycleTtm,
         operatingCostValue: operatingCost,
         operatingCostTtmValue,
         operatingRevenueValue: operatingRevenue,
@@ -147,6 +191,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         accountsReceivableValue: accountsReceivable,
         totalAssetsValue: totalAssets,
         propertyPlantEquipmentValue: propertyPlantEquipment,
+        accountsPayableValue: accountsPayable,
         warnings,
       },
       update: {
@@ -163,6 +208,17 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         fixedAssetTurnoverQuarterly,
         fixedAssetTurnoverQuarterlyAnnualized,
         fixedAssetTurnoverTtm,
+        payablesTurnoverQuarterly,
+        payablesTurnoverQuarterlyAnnualized,
+        payablesTurnoverTtm,
+        inventoryDaysQuarterlyAnnualized,
+        inventoryDaysTtm,
+        receivablesDaysQuarterlyAnnualized,
+        receivablesDaysTtm,
+        payablesDaysQuarterlyAnnualized,
+        payablesDaysTtm,
+        cashConversionCycleQuarterlyAnnualized,
+        cashConversionCycleTtm,
         operatingCostValue: operatingCost,
         operatingCostTtmValue,
         operatingRevenueValue: operatingRevenue,
@@ -171,6 +227,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
         accountsReceivableValue: accountsReceivable,
         totalAssetsValue: totalAssets,
         propertyPlantEquipmentValue: propertyPlantEquipment,
+        accountsPayableValue: accountsPayable,
         warnings,
       },
     });
@@ -197,6 +254,17 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     fixedAssetTurnoverQuarterly,
     fixedAssetTurnoverQuarterlyAnnualized,
     fixedAssetTurnoverTtm,
+    payablesTurnoverQuarterly,
+    payablesTurnoverQuarterlyAnnualized,
+    payablesTurnoverTtm,
+    inventoryDaysQuarterlyAnnualized,
+    inventoryDaysTtm,
+    receivablesDaysQuarterlyAnnualized,
+    receivablesDaysTtm,
+    payablesDaysQuarterlyAnnualized,
+    payablesDaysTtm,
+    cashConversionCycleQuarterlyAnnualized,
+    cashConversionCycleTtm,
     operatingCost: { value: operatingCost?.toString() ?? null },
     operatingCostTtm: { value: operatingCostTtmValue?.toString() ?? null },
     operatingRevenue: { value: operatingRevenue?.toString() ?? null },
@@ -205,6 +273,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     accountsReceivable: { value: accountsReceivable?.toString() ?? null },
     totalAssets: { value: totalAssets?.toString() ?? null },
     propertyPlantEquipment: { value: propertyPlantEquipment?.toString() ?? null },
+    accountsPayable: { value: accountsPayable?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

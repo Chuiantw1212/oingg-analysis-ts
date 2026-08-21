@@ -303,6 +303,23 @@ model TurnoverRatioResult {
   fixedAssetTurnoverQuarterlyAnnualized Decimal? @map("fixed_asset_turnover_quarterly_annualized") @db.Decimal(14, 4)
   fixedAssetTurnoverTtm                 Decimal? @map("fixed_asset_turnover_ttm") @db.Decimal(14, 4)
 
+  // 應付帳款周轉率——DPO 的「次數」版本，2026-08-21 新增，跟其他四個周轉率同一種結構、同一張表。
+  payablesTurnoverQuarterly           Decimal? @map("payables_turnover_quarterly") @db.Decimal(14, 4)
+  payablesTurnoverQuarterlyAnnualized Decimal? @map("payables_turnover_quarterly_annualized") @db.Decimal(14, 4)
+  payablesTurnoverTtm                 Decimal? @map("payables_turnover_ttm") @db.Decimal(14, 4)
+
+  // DIO/DSO/DPO 週轉天數 = 365 / 年化周轉率，只提供年化跟 TTM 兩種口徑（見 types.ts 註解）。
+  inventoryDaysQuarterlyAnnualized   Decimal? @map("inventory_days_quarterly_annualized") @db.Decimal(14, 4)
+  inventoryDaysTtm                   Decimal? @map("inventory_days_ttm") @db.Decimal(14, 4)
+  receivablesDaysQuarterlyAnnualized Decimal? @map("receivables_days_quarterly_annualized") @db.Decimal(14, 4)
+  receivablesDaysTtm                 Decimal? @map("receivables_days_ttm") @db.Decimal(14, 4)
+  payablesDaysQuarterlyAnnualized    Decimal? @map("payables_days_quarterly_annualized") @db.Decimal(14, 4)
+  payablesDaysTtm                    Decimal? @map("payables_days_ttm") @db.Decimal(14, 4)
+
+  // CCC 現金轉換週期 = DIO + DSO - DPO。
+  cashConversionCycleQuarterlyAnnualized Decimal? @map("cash_conversion_cycle_quarterly_annualized") @db.Decimal(14, 4)
+  cashConversionCycleTtm                 Decimal? @map("cash_conversion_cycle_ttm") @db.Decimal(14, 4)
+
   operatingCostValue       BigInt? @map("operating_cost_value") // 本季營業成本
   operatingCostTtmValue    BigInt? @map("operating_cost_ttm_value") // 近四季加總；資料不齊則為 null
   operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收
@@ -312,6 +329,7 @@ model TurnoverRatioResult {
   accountsReceivableValue     BigInt? @map("accounts_receivable_value") // 本季期末應收帳款
   totalAssetsValue            BigInt? @map("total_assets_value") // 本季期末總資產
   propertyPlantEquipmentValue BigInt? @map("property_plant_equipment_value") // 本季期末不動產、廠房及設備
+  accountsPayableValue        BigInt? @map("accounts_payable_value") // 本季期末應付帳款
 
   warnings String[]
 
@@ -565,4 +583,226 @@ model NcavResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("guru_ncav")
+}
+
+// 配息率計算結果——只有 TTM 口徑（現金股利不是每季平均發放，單季配息率會嚴重失真）。
+// 欄位對應 src/domains/profitability/dividendPayoutRatio/types.ts 的 DividendPayoutRatioResult。
+model DividendPayoutRatioResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  payoutRatioTtm Decimal? @map("payout_ratio_ttm") @db.Decimal(10, 2)
+
+  // 現金股利發放某季缺值視為 0（該季沒有發放），不是資料缺漏，見 service.ts 說明。
+  dividendsPaidValue    BigInt? @map("dividends_paid_value")
+  dividendsPaidTtmValue BigInt? @map("dividends_paid_ttm_value")
+
+  netIncomeFieldUsed String? @map("net_income_field_used")
+  netIncomeValue     BigInt? @map("net_income_value")
+  netIncomeTtmValue  BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("profitability_dividend_payout_ratio")
+}
+
+// SGR 可持續成長率計算結果——本服務第二個複合指標，直接引用 RoeResult 的 TTM ROE 跟
+// DividendPayoutRatioResult 的 TTM 配息率，不重複實作查詢邏輯。只有 TTM 口徑。
+// 欄位對應 src/domains/profitability/sgr/types.ts 的 SgrResult。
+model SgrResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  sgrTtm Decimal? @map("sgr_ttm") @db.Decimal(10, 2)
+
+  // 引用自 profitability_roe.roe_ttm_pct / profitability_dividend_payout_ratio.payout_ratio_ttm。
+  roeTtmValue          Decimal? @map("roe_ttm_value") @db.Decimal(10, 2)
+  payoutRatioTtmValue  Decimal? @map("payout_ratio_ttm_value") @db.Decimal(10, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("profitability_sgr")
+}
+
+// 營運現金流對淨利比計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化
+// （跟 InterestCoverageResult 同一種結構）。欄位對應
+// src/domains/cashFlow/ocfToNetIncome/types.ts 的 OcfToNetIncomeResult。
+model OcfToNetIncomeResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  ocfToNetIncomeQuarterly Decimal? @map("ocf_to_net_income_quarterly") @db.Decimal(14, 4)
+  ocfToNetIncomeTtm       Decimal? @map("ocf_to_net_income_ttm") @db.Decimal(14, 4)
+
+  operatingCashFlowValue    BigInt? @map("operating_cash_flow_value")
+  operatingCashFlowTtmValue BigInt? @map("operating_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
+  netIncomeFieldUsed        String? @map("net_income_field_used")
+  netIncomeValue            BigInt? @map("net_income_value")
+  netIncomeTtmValue         BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("cash_flow_ocf_to_net_income")
+}
+
+// 應計項目比率計算結果——分母用本季期末總資產（不是平均），跟 turnoverRatio 同一種刻意簡化。
+// 欄位對應 src/domains/cashFlow/accrualsRatio/types.ts 的 AccrualsRatioResult。
+model AccrualsRatioResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  accrualsRatioQuarterly           Decimal? @map("accruals_ratio_quarterly") @db.Decimal(10, 2)
+  accrualsRatioQuarterlyAnnualized Decimal? @map("accruals_ratio_quarterly_annualized") @db.Decimal(10, 2)
+  accrualsRatioTtm                 Decimal? @map("accruals_ratio_ttm") @db.Decimal(10, 2)
+
+  netIncomeFieldUsed        String? @map("net_income_field_used")
+  netIncomeValue             BigInt? @map("net_income_value")
+  netIncomeTtmValue          BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
+  operatingCashFlowValue     BigInt? @map("operating_cash_flow_value")
+  operatingCashFlowTtmValue  BigInt? @map("operating_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
+  investingCashFlowValue     BigInt? @map("investing_cash_flow_value")
+  investingCashFlowTtmValue  BigInt? @map("investing_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
+  totalAssetsValue           BigInt? @map("total_assets_value") // 本季期末總資產（分母，用期末值）
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("cash_flow_accruals_ratio")
+}
+
+// ROCE 使用資本報酬率計算結果——跟 RoeResult/RoaResult 同一種單季/年化/TTM 三數值結構。
+// 欄位對應 src/domains/profitability/roce/types.ts 的 RoceResult。
+model RoceResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  roceQuarterlyPct           Decimal? @map("roce_quarterly_pct") @db.Decimal(10, 2)
+  roceQuarterlyAnnualizedPct Decimal? @map("roce_quarterly_annualized_pct") @db.Decimal(10, 2)
+  roceTtmPct                 Decimal? @map("roce_ttm_pct") @db.Decimal(10, 2)
+
+  // EBIT = 稅前淨利 + 利息費用（跟 InterestCoverageResult/NetDebtToEbitdaResult 算法一致）。
+  ebitValue            BigInt? @map("ebit_value")
+  ebitTtmValue         BigInt? @map("ebit_ttm_value") // 近四季加總；資料不齊則為 null
+  // 使用資本（Capital Employed）= 總資產 - 流動負債，期末餘額。
+  capitalEmployedValue BigInt? @map("capital_employed_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("profitability_roce")
+}
+
+// ROIC 投入資本回報率計算結果——跟 RoeResult/RoaResult 同一種單季/年化/TTM 三數值結構。
+// 欄位對應 src/domains/profitability/roic/types.ts 的 RoicResult。
+model RoicResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  roicQuarterlyPct           Decimal? @map("roic_quarterly_pct") @db.Decimal(10, 2)
+  roicQuarterlyAnnualizedPct Decimal? @map("roic_quarterly_annualized_pct") @db.Decimal(10, 2)
+  roicTtmPct                 Decimal? @map("roic_ttm_pct") @db.Decimal(10, 2)
+
+  // NOPAT = EBIT x (1 - 有效稅率)；稅前淨利為零或負數時無法計算。
+  nopatValue    BigInt? @map("nopat_value")
+  nopatTtmValue BigInt? @map("nopat_ttm_value") // 近四季各季 NOPAT 加總；資料不齊則為 null
+
+  // 投入資本 = 有息負債（短期借款+應付公司債+長期借款） + 權益 - 現金及約當現金，期末餘額。
+  investedCapitalValue BigInt? @map("invested_capital_value")
+  equityFieldUsed      String? @map("equity_field_used")
+  equityValue          BigInt? @map("equity_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("profitability_roic")
+}
+
+// 巴菲特股東盈餘（每股）計算結果——跟 CashFlowPerShareResult 同一種單季/年化/TTM 三數值結構，
+// taxonomy 原文是公司總額，本服務改成每股版本（理由見 types.ts 註解）。
+// 欄位對應 src/domains/guru/ownerEarnings/types.ts 的 OwnerEarningsResult。
+model OwnerEarningsResult {
+  symbol              String
+  year                Int    @map("year") // 民國年
+  season              Int    @map("season") // 1~4
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  ownerEarningsPerShareQuarterly           Decimal? @map("owner_earnings_per_share_quarterly") @db.Decimal(14, 4)
+  ownerEarningsPerShareQuarterlyAnnualized Decimal? @map("owner_earnings_per_share_quarterly_annualized") @db.Decimal(14, 4)
+  ownerEarningsPerShareTtm                 Decimal? @map("owner_earnings_per_share_ttm") @db.Decimal(14, 4)
+
+  netIncomeFieldUsed String? @map("net_income_field_used")
+  netIncomeValue     BigInt? @map("net_income_value")
+  netIncomeTtmValue  BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
+
+  depreciationAndAmortizationValue    BigInt? @map("depreciation_and_amortization_value")
+  depreciationAndAmortizationTtmValue BigInt? @map("depreciation_and_amortization_ttm_value") // 近四季加總；資料不齊則為 null
+
+  capitalExpendituresValue    BigInt? @map("capital_expenditures_value") // 現金流量表原始值（負數）
+  capitalExpendituresTtmValue BigInt? @map("capital_expenditures_ttm_value") // 近四季加總（負數）；資料不齊則為 null
+
+  paidInShares               BigInt? @map("paid_in_shares")
+  capitalStockEffectiveYear  Int?    @map("capital_stock_effective_year")
+  capitalStockEffectiveMonth Int?    @map("capital_stock_effective_month")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_owner_earnings")
 }

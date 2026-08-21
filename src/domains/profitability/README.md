@@ -13,11 +13,11 @@
 | `Net_Profit_Margin` | 稅後淨利率 | `Net Income / Revenue` | MRQ, TTM, FY | ✅ 已實作 — [`margins/`](margins/)，`GET /profitability/margins`（單季/TTM） |
 | `ROE` | 股東權益報酬率 | `Net Income / Shareholders' Equity` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roe/`](roe/)，`GET /profitability/roe`（單季/年化/TTM） |
 | `ROA` | 總資產報酬率 | `Net Income / Total Assets` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roa/`](roa/)，`GET /profitability/roa`（單季/年化/TTM） |
-| `ROIC` | 投入資本回報率 | `NOPAT / Invested Capital` | TTM, FY | ⬜ 未實作 |
-| `ROCE` | 使用資本報酬率 | `EBIT / (Total Assets - Current Liabilities)` | TTM, FY | ⬜ 未實作 |
-| `CFROI` | 現金流投資回報率 | `Gross Cash Flow / Gross Invested Capital` | TTM, FY | ⬜ 未實作 |
-| `Dividend_Payout_Ratio` | 配息率 | `Total Dividends / Net Income` | TTM, FY | ⬜ 未實作 |
-| `SGR` | 可持續成長率 | `ROE * (1 - Dividend Payout Ratio)` | TTM, FY | ⬜ 未實作，依賴 `Dividend_Payout_Ratio` 先做完 |
+| `ROIC` | 投入資本回報率 | `NOPAT / Invested Capital` | TTM, FY | ✅ 已實作 — [`roic/`](roic/)，`GET /profitability/roic`（單季/年化/TTM）。見下方「ROIC/ROCE 計算口徑」 |
+| `ROCE` | 使用資本報酬率 | `EBIT / (Total Assets - Current Liabilities)` | TTM, FY | ✅ 已實作 — [`roce/`](roce/)，`GET /profitability/roce`（單季/年化/TTM） |
+| `CFROI` | 現金流投資回報率 | `Gross Cash Flow / Gross Invested Capital` | TTM, FY | ⬜ 未實作——taxonomy 定義本身模糊（通常需要通膨調整的重置成本會計），優先度較低 |
+| `Dividend_Payout_Ratio` | 配息率 | `Total Dividends / Net Income` | TTM, FY | ✅ 已實作 — [`dividendPayoutRatio/`](dividendPayoutRatio/)，`GET /profitability/dividend-payout-ratio`（只有 TTM，見下方說明） |
+| `SGR` | 可持續成長率 | `ROE * (1 - Dividend Payout Ratio)` | TTM, FY | ✅ 已實作 — [`sgr/`](sgr/)，`GET /profitability/sgr`（只有 TTM，複合指標直接引用 `roe`/`dividendPayoutRatio`） |
 
 ## 本服務自行歸類的指標（不在 taxonomy 明列的 code 裡）
 
@@ -34,3 +34,17 @@
 - 需要流通股數的指標一律查 `capital_stock_history`（見 [`../../shared/capitalStock.ts`](../../shared/capitalStock.ts) 的 `getPaidInSharesAsOf`），不要用「股本 ÷ 10」估算；財報金額單位是千元，股數是實際股數，換算時記得 x1000（BVPS 曾經漏過這步，見 [`bvps/service.ts`](bvps/service.ts) 註解）。
 - 單季/年化/TTM 三個口徑放同一張表、同一支 API，不要拆開（EPS 曾經先拆過 `eps-ttm` 獨立一支，後來合併回來）。
 - **不是每個指標都需要「年化」欄位**：`Gross_Margin`/`Operating_Margin`/`Net_Profit_Margin` 是「同期流量 / 同期流量」的比率（例如本季毛利 / 本季營收），比率本身已經跟期間長度無關，不需要像 ROE（流量對存量）那樣簡單 x4 年化——[`margins/`](margins/) 只有 `*Quarterly` 跟 `*Ttm` 兩種口徑，沒有 `*QuarterlyAnnualized`，之後遇到其他「流量/流量」型比率也適用同樣判斷。
+
+## ROIC/ROCE 計算口徑
+
+- **EBIT** 算法跟 [`../solvency/interestCoverage/`](../solvency/interestCoverage/)/[`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 完全一致：稅前淨利（`profitBeforeTax`） + 利息費用（`financeCosts`），財報沒有現成 EBIT 欄位，用這個方式反推。
+- **ROCE** 分母（使用資本 Capital Employed） = 總資產 - 流動負債，期末餘額，跟 ROE 用期末權益同一種刻意簡化。
+- **ROIC** 分子是 NOPAT（稅後淨營業利潤） = EBIT x (1 - 有效稅率)，有效稅率 = 所得稅費用 / 稅前淨利——**稅前淨利為零或負數時無法計算**（有效稅率沒有意義），該季 ROIC 會是 `null`。
+- **ROIC** 分母（投入資本 Invested Capital） = 有息負債（短期借款+應付公司債+長期借款，口徑跟 [`../solvency/deRatio/`](../solvency/deRatio/) 一致） + 權益 - 現金及約當現金，扣現金是常見做法，排除非用於營運的超額現金部位。
+- 兩者都跟 ROE/ROA 同一種單季/年化/TTM 三數值結構（單季簡單 x4 年化；TTM 是近四季分子加總 / 本季期末分母）。
+
+## 配息率／SGR 計算口徑
+
+- **配息率只提供 TTM 口徑**：現金股利通常一年只發放一到兩次，不是每季平均發放，單季配息率會因為「剛好有沒有發股利的那一季」劇烈失真，近四季加總才是有意義的年度口徑。
+- payoutRatioTtm = `|近四季現金股利發放（quarterly_cash_flow_statement.dividendsPaid）加總| / 近四季淨利加總 * 100`。`dividendsPaid` 某季缺值視為 0（該季沒有發放，不是資料缺漏），跟 `deRatio`/`netDebtToEbitda` 的有息負債欄位處理邏輯一致；只有淨利缺漏才會讓 TTM 視為不齊。近四季淨利加總為零或負數時無法計算。
+- **SGR 是本服務第二個複合指標**：[`sgr/service.ts`](sgr/service.ts) 直接引用 `roe`/`dividendPayoutRatio` 已經算好的 TTM 數值，不重複查詢，跟 `guru/grahamNumber` 引用 `eps`/`bvps` 同一種模式。因為配息率只有 TTM 口徑，SGR 自然也只有 TTM。
